@@ -135,6 +135,10 @@ export interface Preset {
   name: string;
   line: string;
   promise: string;
+  /** the feeling the path is reaching for */
+  feeling?: string;
+  /** what it gives up to get there */
+  trade?: string;
   profile: Partial<Profile>;
 }
 
@@ -144,6 +148,8 @@ export const PRESETS: Preset[] = [
     name: "Anti-pancake everyday",
     line: "Sheer base, spot work, cream colour.",
     promise: "The smart alternative to full-face cake.",
+    feeling: "Looked-after rather than made-up.",
+    trade: "Gives up the comfort of full coverage on the days you want to hide.",
     profile: { goals: ["escape-pancake", "even-tone", "fast-polish"], skin: "combination", coverage: 30, ceiling: 6, desire: 2, maintenance: 1, timeBudget: 10 },
   },
   {
@@ -151,6 +157,8 @@ export const PRESETS: Preset[] = [
     name: "High altitude & dry",
     line: "Flexible tints and balms over powder stacks.",
     promise: "Films that move with dehydrated skin.",
+    feeling: "Lit from inside, even in thin air.",
+    trade: "Gives up matte control; shine is treated as health, not failure.",
     profile: { goals: ["dryness", "escape-pancake", "alternatives"], skin: "dry", climate: "altitude", coverage: 25, ceiling: 6, outdoors: 2, desire: 2, maintenance: 1, timeBudget: 10 },
   },
   {
@@ -158,6 +166,8 @@ export const PRESETS: Preset[] = [
     name: "Sensitive capsule",
     line: "Fewer products, mineral-aware, hard filters kept.",
     promise: "Lighter layers where reactivity is live.",
+    feeling: "Calm. Nothing on the face arguing with it.",
+    trade: "Gives up range — the shortlist stays deliberately narrow.",
     profile: { goals: ["sensitive", "redness", "simplify"], sensitivity: 3, concerns: ["redness"], filters: ["fragranceFree", "mineral"], coverage: 28, ceiling: 5, desire: 1, maintenance: 1, timeBudget: 10 },
   },
   {
@@ -165,6 +175,8 @@ export const PRESETS: Preset[] = [
     name: "Event-ready, not cake",
     line: "Longevity where it matters only.",
     promise: "Definition earns the bag; the base stays honest.",
+    feeling: "Photographed at midnight and still yourself.",
+    trade: "Gives up speed — this is the longest morning on the desk.",
     profile: { goals: ["event", "awake", "shine"], coverage: 45, ceiling: 9, desire: 3, maintenance: 2, timeBudget: 20 },
   },
   {
@@ -172,6 +184,8 @@ export const PRESETS: Preset[] = [
     name: "Skin-first reset",
     line: "Spot, brow, balm. Nothing else.",
     promise: "Permission to drop conventional base entirely.",
+    feeling: "Relief. The face left alone on purpose.",
+    trade: "Gives up evening tone; texture and colour stay visible.",
     profile: { goals: ["wear-less", "simplify", "alternatives"], coverage: 8, ceiling: 4, desire: 0, maintenance: 0, timeBudget: 5 },
   },
   {
@@ -179,6 +193,8 @@ export const PRESETS: Preset[] = [
     name: "Sebum city",
     line: "Thin base, blotting over re-powdering.",
     promise: "Oil moves the base — so the base has to be thin.",
+    feeling: "Composed through a humid afternoon.",
+    trade: "Gives up the security blanket of pressed powder in the bag.",
     profile: { goals: ["shine", "escape-pancake", "even-tone"], skin: "oily", climate: "humid", coverage: 32, ceiling: 6, desire: 1, maintenance: 1, timeBudget: 10, bag: ["full-foundation", "pressed-powder", "primer"] },
   },
   {
@@ -186,6 +202,8 @@ export const PRESETS: Preset[] = [
     name: "Carry-on capsule",
     line: "Four objects, every one doing two jobs.",
     promise: "Travel is a complexity ceiling with a zip.",
+    feeling: "Unbothered, wherever you land.",
+    trade: "Gives up specialists — every object has to compromise a little.",
     profile: { goals: ["simplify", "fast-polish", "alternatives"], coverage: 22, ceiling: 4, desire: 2, maintenance: 0, timeBudget: 7, budget: "mid", bag: ["multi-stick", "lip-cheek-balm", "mascara"] },
   },
   {
@@ -193,7 +211,38 @@ export const PRESETS: Preset[] = [
     name: "Photographed & on camera",
     line: "Definition and diffusion, never opacity.",
     promise: "Lenses punish layers before they punish colour.",
+    feeling: "Legible on a screen without reading as makeup.",
+    trade: "Gives up minutes and asks for a proper light check.",
     profile: { goals: ["event", "awake", "even-tone"], coverage: 42, ceiling: 8, desire: 3, maintenance: 2, timeBudget: 22, concerns: ["texture"], bag: ["full-foundation", "setting-powder", "powder-highlighter"] },
+  },
+  {
+    id: "five-minute",
+    name: "Five honest minutes",
+    line: "Three objects, no mirror negotiation.",
+    promise: "The fastest route that still reads as considered.",
+    feeling: "Out of the door with the face already settled.",
+    trade: "Gives up correction entirely — what shows, shows.",
+    profile: { goals: ["fast-polish", "simplify", "escape-pancake"], coverage: 18, ceiling: 3, desire: 1, maintenance: 0, timeBudget: 5, bag: ["lip-cheek-balm", "mascara"] },
+  },
+  {
+    id: "reactive-repair",
+    name: "Reactive skin, mid-flare",
+    line: "Corrector and prep before any base decision.",
+    promise: "Redness handled by placement, not by opacity.",
+    feeling: "Covered enough to stop thinking about it.",
+    trade: "Gives up glow products that sit on inflamed texture.",
+    profile: {
+      goals: ["redness", "sensitive", "escape-pancake"],
+      skin: "dry",
+      sensitivity: 3,
+      concerns: ["redness", "texture"],
+      filters: ["fragranceFree", "eoFree"],
+      coverage: 34,
+      ceiling: 5,
+      desire: 1,
+      maintenance: 1,
+      timeBudget: 9,
+    },
   },
 ];
 
@@ -212,6 +261,8 @@ export const DEFAULT_PROFILE: Profile = {
   filters: [],
   bag: ["full-foundation", "setting-powder", "powder-blush", "mascara"],
   budget: "mid",
+  undertone: "neutral",
+  depth: 5,
 };
 
 export interface DeskBrand {
