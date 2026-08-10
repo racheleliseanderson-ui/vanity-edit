@@ -7,6 +7,7 @@ import type {
   Kit,
   Pathway,
   Profile,
+  ScenarioResult,
   Tier,
   ToolCall,
   TypeScore,
