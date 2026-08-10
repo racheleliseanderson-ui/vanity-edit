@@ -112,6 +112,26 @@ export interface WhatIf {
   note: string;
 }
 
+export interface ScenarioResult {
+  id: string;
+  label: string;
+  move: string;
+  note: string;
+  risk: number;
+  delta: number;
+  skinlike: number;
+  layers: number;
+  minutes: number;
+  tension: number;
+  objects: number;
+  ceiling: number;
+  kit: { label: string; lane: string }[];
+  top: { label: string; score: number }[];
+  bag: { keep: number; differently: number; replace: number; changed: string[] };
+  pathway: string;
+  pathwayFit: number;
+}
+
 export interface Edit {
   architecture: Architecture;
   types: TypeScore[];
