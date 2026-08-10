@@ -284,17 +284,28 @@ export function rankProducts(query: ProductQuery, sort: SortKey = "relevance"): 
 
 /** Which single filter, if loosened, would return the most results. */
 export function loosenSuggestion(query: ProductQuery): { field: string; label: string; count: number } | null {
-  const trials: { field: string; label: string; next: ProductQuery }[] = [
-    ...(query.q ? [{ field: "q", label: "clear the search words", next: { ...query, q: "" } }] : []),
-    ...(query.lane ? [{ field: "lane", label: `drop the ${query.lane} lane`, next: { ...query, lane: undefined } }] : []),
-    ...(query.brand ? [{ field: "brand", label: `open it past ${query.brand}`, next: { ...query, brand: undefined } }] : []),
-    ...(query.band ? [{ field: "band", label: "widen the price band", next: { ...query, band: undefined } }] : []),
-    ...(query.filters?.length ? [{ field: "filters", label: "release the preference filters", next: { ...query, filters: [] } }] : []),
-    ...(query.maxLayer !== undefined ? [{ field: "maxLayer", label: "allow thicker films", next: { ...query, maxLayer: undefined } }] : []),
-    ...(query.typeId ? [{ field: "typeId", label: "look past that one product type", next: { ...query, typeId: undefined } }] : []),
-  ];
+  const trials: { field: string; label: string; next: ProductQuery }[] = [];
+  if (query.q) trials.push({ field: "q", label: "clear the search words", next: { ...query, q: "" } });
+  if (query.lanes?.length)
+    trials.push({ field: "lanes", label: `drop the ${query.lanes.join(" / ")} lane filter`, next: { ...query, lanes: [] } });
+  if (query.brands?.length)
+    trials.push({ field: "brands", label: `open it past ${query.brands.join(" / ")}`, next: { ...query, brands: [] } });
+  if (query.band) trials.push({ field: "band", label: "widen the price band", next: { ...query, band: undefined } });
+  if (query.minPrice !== undefined || query.maxPrice !== undefined)
+    trials.push({ field: "price", label: "release the price range", next: { ...query, minPrice: undefined, maxPrice: undefined } });
+  if (query.filters?.length)
+    trials.push({ field: "filters", label: "release the preference filters", next: { ...query, filters: [] } });
+  if (query.maxLayer !== undefined)
+    trials.push({ field: "maxLayer", label: "allow thicker films", next: { ...query, maxLayer: undefined } });
+  if (query.typeId)
+    trials.push({ field: "typeId", label: "look past that one product type", next: { ...query, typeId: undefined } });
   const scored = trials
     .map((t) => ({ field: t.field, label: t.label, count: searchProducts(t.next).length }))
     .sort((a, b) => b.count - a.count);
   return scored[0] ?? null;
+}
+
+/** The nearest results when the exact combination returns nothing: keep the words, drop the filters. */
+export function closestResults(query: ProductQuery, sort: SortKey = "relevance", limit = 6): RankedProduct[] {
+  return rankProducts({ q: query.q, typeId: query.typeId }, sort).slice(0, limit);
 }
