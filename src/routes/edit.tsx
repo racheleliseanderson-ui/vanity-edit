@@ -944,24 +944,42 @@ function EditRoute() {
                 <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{edit.kit.note}</p>
               </div>
               <div className="mt-8 divide-y divide-border border-y border-border">
-                {edit.kit.items.map((it, i) => (
-                  <div key={it.id} className="grid gap-3 py-6 md:grid-cols-[3rem_1fr_1.2fr] md:gap-8">
+                {matched.map(({ item: it, matches }, i) => (
+                  <div key={it.id} className="grid gap-4 py-7 md:grid-cols-[3rem_1fr_1.4fr] md:gap-8">
                     <span className="display text-champagne text-xl">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <h3 className="display text-2xl">{it.label}</h3>
                       <p className="mt-1 text-xs tracking-[0.2em] uppercase text-muted-foreground">Layer weight {it.layerWeight}</p>
+                      <p className="mt-3 text-sm text-muted-foreground">{it.job}</p>
+                      <ConfirmButton
+                        onPress={() => addToBag([it.id])}
+                        confirmed={tr("edit.inBag")}
+                        className="no-print mt-4 w-full sm:w-auto"
+                      >
+                        {profile.bag.includes(it.id) ? tr("edit.inBag") : tr("edit.addToBag")}
+                      </ConfirmButton>
                     </div>
                     <div>
-                      <p className="text-sm">{it.job}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        On the desk ·{" "}
-                        {PRODUCTS.filter((p) => p.typeId === it.id).length
-                          ? PRODUCTS.filter((p) => p.typeId === it.id)
-                              .slice(0, 3)
-                              .map((p) => `${p.brand} ${p.name} ($${p.price})`)
-                              .join(" · ")
-                          : it.example}
-                      </p>
+                      <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Makeup matched</p>
+                      {matches.length === 0 ? (
+                        <p className="mt-2 text-xs text-muted-foreground">On the desk · {it.example}</p>
+                      ) : (
+                        <ul className="mt-3 space-y-4">
+                          {matches.map((m) => (
+                            <li key={m.product.id} className="border-l border-champagne/40 pl-4">
+                              <p className="text-sm">
+                                {m.product.brand} <span className="text-muted-foreground">{m.product.name}</span>{" "}
+                                <span className="tabular-nums text-muted-foreground">${m.product.price}</span>
+                              </p>
+                              <div className="mt-2 max-w-[16rem]">
+                                <Meter value={m.fit} label="Match" right={`${m.fit}`} />
+                              </div>
+                              <p className="mt-2 text-xs leading-snug text-muted-foreground">{m.why}</p>
+                              {m.shade && <p className="mt-1 text-xs leading-snug text-champagne/90">{m.shade}</p>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 ))}
