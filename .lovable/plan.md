@@ -1,31 +1,43 @@
-# Selective handoff document for Makeup Intelligence
+# Deeper data, more dynamic instrument, light/dark toggle
 
-Produce one written handoff artifact — no source changes to this prototype and no repository merge. The document lets you port only accepted behavior into the canonical repository by hand, and states how each accepted piece becomes WordPress.
+Three additions to the existing Noir Vanity build. No rewrite — the engine, palette and routes stay; they get extended.
 
-Frozen reference: commit `a799f9c`, published at vanity-vice-edit.lovable.app.
+## 1. Light / dark toggle
 
-## What the document contains
+The stylesheet currently defines only the dark "Noir" palette on `:root`, and a `.dark` variant that nothing switches. Add a real second theme rather than an inverted one:
 
-1. **Freeze record** — project ID, frozen commit, published URL, the approved visual direction (Noir Vanity), and the fact that this prototype is non-canonical.
+- **Noir** (existing): ink ground, champagne and oxblood, cinematic.
+- **Porcelain** (new): warm porcelain ground, oxblood as the structural ink, champagne as gilt accent, blush fields. Full art direction in the light theme too — not a washed-out copy. Image overlays, spectra, dial arcs and hairlines each get their own light-mode values so contrast stays luxurious rather than flat.
 
-2. **File-by-file inventory**, each item classified RETAIN / REWRITE / REJECT / VERIFY:
-   - `src/lib/mi/types.ts`, `catalog.ts`, `engine.ts` — the intelligence layer (profile model, pancake-risk architecture scoring, type scoring, pathways, tool necessity, bag edit, ceiling-bound kit builder, adaptive coaching). This is the substantive value; framework-independent TypeScript.
-   - `src/styles.css` — palette tokens (oxblood, champagne, porcelain, blush, ink, rouge), typography pairing, motion.
-   - `src/components/mi/viz.tsx` — RiskDial, Spectrum, Meter, Chip, Slider.
-   - `src/components/mi/chrome.tsx`, `src/routes/*` — composition and art direction; port as reference, not as code.
-   - `src/assets/*.jpg` — four generated images; flagged VERIFY for rights/appropriateness before any reuse.
-   - Everything else (TanStack runtime, `src/components/ui/*` shadcn set, router/server entry files, lockfile, package.json, generated route tree) — REJECT for canonical merge.
+Toggle lives in the header (a small gilt sun/moon switch), persists to `localStorage`, and respects `prefers-color-scheme` on first visit. Read after hydration so there is no SSR mismatch.
 
-3. **WordPress port map** — for each RETAIN item, the destination form: engine as a standalone TS/JS module or block script, tokens as theme CSS custom properties, viz components as block-level markup/SVG, routes as page templates or block patterns, packet export as print stylesheet.
+## 2. More data
 
-4. **Dependency and limits record** — the engine's runtime dependencies (none beyond TypeScript), what the React components do depend on, plus known limits: all scoring is deterministic client-side logic with no persistence, no accounts, no analytics; desk examples are illustrative and explicitly not safety rankings.
+Grow the catalog substantially, keeping the same shape so the engine picks it up automatically:
 
-5. **Verification and rollback notes** — production build result, browser checks performed across presets, absent items (no automated tests, no accessibility audit beyond visual contrast review), and the statement that rollback is simply "do not port."
+- **Product types**: 23 → ~40. Add missing lanes — primer/grip, cream bronzer, powder bronzer, cream contour, tinted brow gel, brow pencil, brow soap, lash tint alternatives, tubing mascara, eye pencil, cream shadow stick, powder shadow, lash curler path, tinted lip oil, lip liner, satin lipstick, blot powder, setting spray, hydrating mist, under-eye patch, SPF-only path.
+- **Brands**: 26 → ~45, with the same best-when / less-ideal-when honesty and family tags; add several sensitive- and pharmacy-tier houses so `lean` budget is genuinely served.
+- **Presets**: 5 → 8. Add oily/humid city, mature-skin luminous, and rosacea-aware paths.
+- **Tools**: expand with per-tool alternatives (fingers, damp sponge, blot only) so tool necessity can recommend "nothing extra".
+- Each new entry carries the full scoring vector (layer weight, coverage, oil/dry affinity, longevity, upkeep, minutes) so nothing lands unscored.
 
-## Output location
+## 3. More dynamic behavior
 
-Written to `docs/handoff/makeup-intelligence-a799f9c.md` inside this prototype, so it travels with the frozen commit and can be copied out. No other file is touched.
+- **Transparent score breakdown**: expand any product type to see the exact contributions that produced its number (goal match, skin fit, climate, upkeep cost, layer penalty) as signed bars.
+- **What-if sensitivity**: for the current profile, show which single input would move pancake risk the most, with a one-tap "try it" that previews the new risk before committing.
+- **Live delta feedback**: when a slider or chip changes, risk, skin-like score and kit size animate to their new values and briefly flag the direction of travel.
+- **Pathway comparison**: pick two pathways and see them side by side on fit, layers, minutes, upkeep and what each trades away.
+- **Kit tension meter**: shows how much of the complexity ceiling is spent and refuses to fill remaining slots, stating why the kit stopped short.
+- **Coaching that cites the numbers** it is reacting to, rather than generic prose.
+- **Stage transitions** across Match → Alternatives → Tools → Bag → Kit → Packet get proper motion, and the packet gains a light-theme print sheet so exports stay legible on paper.
 
-## Explicitly out of scope
+## 4. Handoff document (carried over)
 
-No GitHub connection, no branch, no pull request, no push to `racheleliseanderson-ui/makeup-intelligence`, no WordPress action, no publish, no credentials.
+Still produce `docs/handoff/makeup-intelligence-<commit>.md`: freeze record, file-by-file RETAIN / REWRITE / REJECT / VERIFY inventory, WordPress port map for each retained item, dependency and limits record, verification and rollback notes. Nothing is pushed to GitHub and nothing merges into the canonical repository.
+
+## Technical notes
+
+- All new colour work goes through tokens in `src/styles.css` (`@theme inline` plus `:root` and `.dark` blocks) — no hardcoded colour utilities in components.
+- Catalog growth is data-only in `src/lib/mi/catalog.ts`; scoring weights in `src/lib/mi/engine.ts` gain the new lanes and the per-contribution breakdown the UI reveals.
+- Sensitivity analysis runs the existing engine over candidate profile mutations client-side — no backend, no persistence, no accounts.
+- Desk examples stay explicitly illustrative, never safety rankings.
