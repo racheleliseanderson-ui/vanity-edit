@@ -188,24 +188,10 @@ function EditRoute() {
               <h1 className="display mt-3 text-4xl md:text-6xl">
                 Your <span className="gilt-text italic">personal edit</span>
               </h1>
-              <div className="mt-6 flex flex-wrap gap-2 no-print">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setActivePreset(p.id);
-                      setProfile({ ...DEFAULT_PROFILE, ...p.profile });
-                    }}
-                    className={`border px-4 py-2 text-[0.66rem] tracking-[0.2em] uppercase transition-colors ${
-                      activePreset === p.id
-                        ? "border-champagne bg-champagne/10 text-champagne"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
+              <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                Start from a smart path — each one is already costed for pancake risk, objects and minutes — then revise
+                every field underneath it.
+              </p>
             </div>
             <div className="panel p-7">
               <RiskDial arch={edit.architecture} />
@@ -218,6 +204,73 @@ function EditRoute() {
                 <Stat k="Tension" v={`${edit.kit.tension}`} />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Smart paths — desirable, costed, reversible */}
+      <section className="no-print border-b border-border">
+        <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">{t("edit.smartPaths")}</p>
+              <h2 className="display mt-2 text-3xl md:text-4xl">
+                Nine ways in, <span className="gilt-text italic">each one honest about the trade</span>
+              </h2>
+            </div>
+            {previousProfile && (
+              <button
+                onClick={() => {
+                  setProfile(previousProfile);
+                  setPreviousProfile(null);
+                  setActivePreset(undefined);
+                }}
+                className="tap border border-border px-5 text-[0.62rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground"
+              >
+                {t("edit.undoPath")}
+              </button>
+            )}
+          </div>
+          <div className="mt-8">
+            <Carousel count={pathCards.length} label="Smart paths">
+              {pathCards.map(({ preset: p, risk, objects, minutes, skinlike }) => {
+                const on = activePreset === p.id;
+                return (
+                  <article
+                    key={p.id}
+                    className={`flex w-[80vw] shrink-0 snap-start flex-col gap-4 border p-6 transition-colors sm:w-[320px] ${
+                      on ? "border-champagne bg-champagne/[0.06]" : "border-border hover:border-champagne/50"
+                    }`}
+                  >
+                    <div>
+                      <p className="eyebrow">{p.line}</p>
+                      <h3 className="display mt-2 text-2xl leading-tight">{p.name}</h3>
+                      <p className="mt-2 text-sm italic text-muted-foreground">{p.feeling ?? p.promise}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <Meter value={risk} label="Projected pancake risk" right={`${risk}`} tone={risk > 50 ? "oxblood" : "champagne"} />
+                      <Meter value={skinlike} label="Skin-like" right={`${skinlike}`} />
+                    </div>
+                    <p className="text-[0.6rem] tracking-[0.22em] uppercase text-muted-foreground">
+                      {objects} objects · {minutes} min
+                    </p>
+                    {p.trade && <p className="text-xs leading-relaxed text-rouge/90">{p.trade}</p>}
+                    <button
+                      onClick={() => {
+                        setPreviousProfile(profile);
+                        setActivePreset(p.id);
+                        setProfile({ ...DEFAULT_PROFILE, ...p.profile });
+                      }}
+                      className={`tap mt-auto w-full border px-4 text-[0.6rem] tracking-[0.24em] uppercase transition-colors ${
+                        on ? "border-champagne bg-champagne/15 text-champagne" : "border-champagne/50 text-champagne hover:bg-champagne/10"
+                      }`}
+                    >
+                      {on ? "This path is live" : t("edit.applyPath")}
+                    </button>
+                  </article>
+                );
+              })}
+            </Carousel>
           </div>
         </div>
       </section>
