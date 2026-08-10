@@ -58,7 +58,7 @@ function EditRoute() {
   const { path } = search;
   const navigate = useNavigate({ from: Route.fullPath });
   const incomingBag = useMemo(
-    () => (search.bag ? search.bag.split(",").filter((id) => TYPE_MAP[id]) : []),
+    () => (search.bag ? search.bag.split(",").filter((id: string) => TYPE_MAP[id]) : []),
     [search.bag],
   );
   const [profile, setProfile] = useState<Profile>(() => {
@@ -81,7 +81,7 @@ function EditRoute() {
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
   const [moves, setMovesState] = useState<string[]>(() =>
-    search.moves ? search.moves.split(",").filter((m) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
+    search.moves ? search.moves.split(",").filter((m: string) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
   );
   const setMoves = (next: string[] | ((prev: string[]) => string[])) =>
     setMovesState((prev) => {
