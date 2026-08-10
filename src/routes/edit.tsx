@@ -323,9 +323,6 @@ function EditRoute() {
             </Section>
           )}
 
-          {stage === "Alternatives" && (
-            <></>
-          )}
           {stage === "Compare" && (
             <Section
               title="Scenario comparison"
