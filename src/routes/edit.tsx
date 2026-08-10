@@ -352,6 +352,27 @@ function EditRoute() {
                         {w.move} · risk {w.risk} · {w.kitSize} objects
                       </p>
                       <p className="mt-2 text-xs leading-snug text-muted-foreground">{w.note}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {SCENARIO_MOVES.some((m) => m.id === w.id) && (
+                          <>
+                            <button
+                              onClick={() => applyMove(w.id)}
+                              className="min-h-11 border border-champagne/60 px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                            >
+                              Apply this move
+                            </button>
+                            <button
+                              onClick={() => {
+                                setMoves((prev) => (prev.includes(w.id) ? prev : [...prev, w.id].slice(-4)));
+                                setStage("Compare");
+                              }}
+                              className="min-h-11 border border-border px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+                            >
+                              Compare it
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
