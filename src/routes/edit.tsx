@@ -708,6 +708,19 @@ function Section({ title, lead, children }: { title: string; lead: string; child
 }
 
 function Stat({ k, v }: { k: string; v: string }) {
+  return <StatInner k={k} v={v} />;
+}
+
+function Cell({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <dt className="text-[0.55rem] tracking-[0.22em] uppercase text-muted-foreground">{k}</dt>
+      <dd className="display mt-1 text-xl tabular-nums">{v}</dd>
+    </div>
+  );
+}
+
+function StatInner({ k, v }: { k: string; v: string }) {
   const num = Number(v.split(" ")[0]?.split("/")[0]);
   return (
     <div>
