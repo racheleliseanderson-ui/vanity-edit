@@ -380,6 +380,24 @@ function EditRoute() {
             </div>
           </Group>
 
+          <Group title={t("edit.shade")} note="Used for shade families only — never an exact match promise.">
+            <div className="grid grid-cols-3 gap-2">
+              {UNDERTONES.map((u) => (
+                <Chip key={u} active={profile.undertone === u} onClick={() => set({ undertone: u })}>
+                  <span className="capitalize">{u}</span>
+                </Chip>
+              ))}
+            </div>
+            <Slider
+              label="Depth"
+              hint={["porcelain", "fair", "light", "light-medium", "medium", "medium-tan", "tan", "deep-tan", "deep", "rich deep"][profile.depth - 1] ?? "medium"}
+              min={1}
+              max={10}
+              value={profile.depth}
+              onChange={(n) => set({ depth: n })}
+            />
+          </Group>
+
           <Group title="What is in the bag now" note="Used for the bag edit — nothing gets thrown away.">
             <p className="sr-only">Toggle the product types you already own.</p>
             <div className="grid gap-2">
