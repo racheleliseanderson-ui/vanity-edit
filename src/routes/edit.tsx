@@ -117,6 +117,8 @@ function EditRoute() {
   const [sets, setSets] = useState<ScenarioSet[]>([]);
   const [setName, setSetName] = useState("");
   const [loadedSet, setLoadedSet] = useState<string | undefined>(undefined);
+  const [importLink, setImportLink] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
   useEffect(() => setSets(loadScenarioSets()), []);
 
   const moveDefs = useMemo(
