@@ -138,6 +138,30 @@ function EditRoute() {
   };
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { t } = useI18n();
+  const stageIndex = STAGES.indexOf(stage);
+  const swipe = useSwipe(
+    () => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]!),
+    () => setStage(STAGES[Math.max(0, stageIndex - 1)]!),
+  );
+  /** Every smart path costed before you commit to it. */
+  const pathCards = useMemo(
+    () =>
+      PRESETS.map((p) => {
+        const preview = runEdit({ ...DEFAULT_PROFILE, ...p.profile });
+        return {
+          preset: p,
+          risk: preview.architecture.risk,
+          objects: preview.kit.items.length,
+          minutes: preview.kit.minutes,
+          skinlike: preview.architecture.skinlike,
+        };
+      }),
+    [],
+  );
+  const [previousProfile, setPreviousProfile] = useState<Profile | null>(null);
+  const addToBag = (ids: string[]) =>
+    setProfile((p) => ({ ...p, bag: [...new Set([...p.bag, ...ids.filter((id) => TYPE_MAP[id])])] }));
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
     if (!dir) return;
