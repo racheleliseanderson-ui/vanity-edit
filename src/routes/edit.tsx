@@ -11,8 +11,10 @@ import {
   TYPE_MAP,
 } from "@/lib/mi/catalog";
 import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { downloadComparePacket } from "@/lib/mi/compare-packet";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { PRODUCTS } from "@/lib/mi/products";
+import { loadScenarioSets, removeScenarioSet, saveScenarioSet, type ScenarioSet } from "@/lib/mi/scenario-sets";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
@@ -96,6 +98,22 @@ function EditRoute() {
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
   const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
   const baseline = columns[0];
+
+  /* Saved scenario sets — local to this browser. */
+  const [sets, setSets] = useState<ScenarioSet[]>([]);
+  const [setName, setSetName] = useState("");
+  const [loadedSet, setLoadedSet] = useState<string | undefined>(undefined);
+  useEffect(() => setSets(loadScenarioSets()), []);
+
+  const moveDefs = useMemo(
+    () =>
+      live
+        .map((id) => SCENARIO_MOVES.find((m) => m.id === id))
+        .filter((m): m is (typeof SCENARIO_MOVES)[number] => Boolean(m))
+        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(profile), note: m.note })),
+    [live, profile],
+  );
+  const exportCompare = () => downloadComparePacket(edit, profile, columns, moveDefs, loadedSet);
 
   /** Apply one costed move straight into the live profile. */
   const applyMove = (id: string) => {
