@@ -1306,3 +1306,31 @@ function StatInner({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
+function IconAction({
+  label,
+  onClick,
+  children,
+  disabled,
+  tone,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  tone?: "rouge";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 min-w-11 items-center justify-center border border-border px-2 text-xs transition-colors disabled:opacity-30 ${
+        tone === "rouge" ? "text-muted-foreground hover:text-rouge" : "text-muted-foreground hover:text-champagne"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
