@@ -577,6 +577,13 @@ function EditRoute() {
                         </ul>
                       )}
                       <p className="text-xs text-muted-foreground">Desk examples · {t.examples.join(" · ")}</p>
+                      <ConfirmButton
+                        onPress={() => addToBag([t.id])}
+                        confirmed={tr("edit.inBag")}
+                        className="no-print w-full sm:w-auto"
+                      >
+                        {profile.bag.includes(t.id) ? tr("edit.inBag") : tr("edit.addToBag")}
+                      </ConfirmButton>
                     </div>
                   </article>
                 ))}
