@@ -26,8 +26,6 @@ export const Route = createFileRoute("/products")({
 
 const LANES = ["base", "spot", "colour", "finish", "eye", "lip", "care"] as const;
 
-export default function noop() {}
-
 function ProductsRoute() {
   const [q, setQ] = useState("");
   const [lane, setLane] = useState<string>("");
