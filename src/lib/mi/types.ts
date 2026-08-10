@@ -52,6 +52,7 @@ export interface TypeScore {
   cautions: string[];
   examples: string[];
   layerWeight: number;
+  breakdown: Contribution[];
 }
 
 export interface Pathway {
@@ -62,6 +63,10 @@ export interface Pathway {
   because: string[];
   tradeoff: string;
   types: string[];
+  layers: number;
+  minutes: number;
+  upkeep: number;
+  ledger: Contribution[];
 }
 
 export interface ToolCall {
@@ -93,6 +98,18 @@ export interface Kit {
   ceiling: number;
   projectedRisk: number;
   note: string;
+  tension: number; // 0-100 how hard the ceiling and desire are pulling apart
+  tensionNote: string;
+}
+
+export interface WhatIf {
+  id: string;
+  label: string;
+  move: string;
+  risk: number;
+  delta: number;
+  kitSize: number;
+  note: string;
 }
 
 export interface Edit {
@@ -103,4 +120,5 @@ export interface Edit {
   bag: BagCall[];
   kit: Kit;
   coach: { title: string; body: string }[];
+  whatIf: WhatIf[];
 }

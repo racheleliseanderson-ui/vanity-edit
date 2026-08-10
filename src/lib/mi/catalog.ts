@@ -73,6 +73,41 @@ export const TYPES: ProductType[] = [
   { id: "tinted-balm", label: "Tinted lip balm", lane: "lip", layerWeight: 0, coverage: 0, oil: 0, dry: 2, longevity: 1, upkeep: 2, minutes: 1, job: "The lowest-effort finish signal there is.", examples: ["ILIA Balmy Tint", "ILIA Balmy Gloss Lip Oil"] },
   { id: "lip-stain", label: "Long-wear lip", lane: "lip", layerWeight: 0, coverage: 0, oil: 0, dry: -1, longevity: 3, upkeep: 0, minutes: 1, job: "Holds through dinner without maintenance.", examples: ["Sheer stain and tint lanes on the desk"] },
   { id: "primer", label: "Grip or blur primer", lane: "care", layerWeight: 1, coverage: 0, oil: 1, dry: 0, longevity: 2, upkeep: 0, minutes: 1, job: "Extra film layer — earns its place rarely.", examples: ["Only when wear failure is documented"] },
+
+  /* ── Base, extended ── */
+  { id: "tinted-moisturiser", label: "Tinted moisturiser", lane: "base", layerWeight: 1, coverage: 28, oil: -1, dry: 2, longevity: 1, upkeep: 1, minutes: 2, job: "Hydration first, tone second.", examples: ["Kosas BB Burst", "Glo C-Shield Moisture Tint SPF 30", "Chantecaille Just Skin"] },
+  { id: "cushion-compact", label: "Cushion compact", lane: "base", layerWeight: 2, coverage: 40, oil: 1, dry: 1, longevity: 2, upkeep: 2, minutes: 2, job: "Portable base — the touch-up temptation is the risk.", examples: ["Hybrid cushion lanes on the desk"] },
+  { id: "blur-balm", label: "Skin blur balm", lane: "base", layerWeight: 1, coverage: 18, oil: 0, dry: 2, longevity: 1, upkeep: 1, minutes: 2, job: "Softens texture optically instead of covering it.", examples: ["Jones Road Miracle Balm", "Hourglass Veil Hybrid"] },
+  { id: "serum-foundation", label: "Serum foundation", lane: "base", layerWeight: 2, coverage: 55, oil: 0, dry: 1, longevity: 2, upkeep: 1, minutes: 4, job: "Medium coverage with a fluid, moveable film.", examples: ["ILIA True Skin Serum Foundation", "Fitglow Foundation +", "Ogee Complexion Perfecting Serum Foundation"] },
+
+  /* ── Spot, extended ── */
+  { id: "blemish-concealer", label: "Blemish concealer", lane: "spot", layerWeight: 1, coverage: 80, oil: 2, dry: -1, longevity: 3, upkeep: 1, minutes: 2, job: "Highest opacity on the smallest possible area.", examples: ["Fitglow Conceal +", "Clove + Hallow Conceal + Correct"] },
+  { id: "hydrating-corrector", label: "Hydrating under-eye corrector", lane: "spot", layerWeight: 1, coverage: 45, oil: -1, dry: 2, longevity: 1, upkeep: 1, minutes: 1, job: "Peach-toned light, no creasing seam.", examples: ["Kosas Revealer", "Rose Inc Softlight"] },
+
+  /* ── Colour, extended ── */
+  { id: "liquid-blush", label: "Liquid blush", lane: "colour", layerWeight: 1, coverage: 12, oil: 1, dry: 1, longevity: 2, upkeep: 1, minutes: 1, job: "Stain-like colour that survives a warm room.", examples: ["Tower 28 BeachPlease Lip + Cheek", "Saie Dew Blush"] },
+  { id: "cream-bronzer", label: "Cream bronzer", lane: "colour", layerWeight: 1, coverage: 14, oil: -1, dry: 2, longevity: 1, upkeep: 1, minutes: 2, job: "Warmth as a plane, not a stripe.", examples: ["Ogee Sculpted Face Stick", "Westman Atelier Beauty Butter"] },
+  { id: "powder-bronzer", label: "Powder bronzer", lane: "colour", layerWeight: 1, coverage: 16, oil: 2, dry: -2, longevity: 2, upkeep: 1, minutes: 2, job: "Warmth on oilier or powder-set days.", examples: ["Youngblood Pressed Mineral Bronzer"] },
+  { id: "bronzing-drops", label: "Bronzing drops", lane: "colour", layerWeight: 1, coverage: 10, oil: -1, dry: 1, longevity: 1, upkeep: 1, minutes: 1, job: "Mixes into base instead of sitting on it.", examples: ["Mix a drop into any serum tint"] },
+  { id: "powder-highlighter", label: "Powder highlight", lane: "colour", layerWeight: 1, coverage: 8, oil: 1, dry: -2, longevity: 2, upkeep: 1, minutes: 1, job: "Sparkle over powder — reads dry on dry skin.", examples: ["Athr Beauty Crystal Highlighter"] },
+
+  /* ── Finish, extended ── */
+  { id: "pressed-powder", label: "Pressed powder compact", lane: "finish", layerWeight: 1, coverage: 20, oil: 2, dry: -2, longevity: 2, upkeep: 2, minutes: 1, job: "Portable set — the classic afternoon cake mechanism.", examples: ["bareMinerals Mineral Veil Pressed", "Jane Iredale PurePressed Base"] },
+  { id: "shine-stick", label: "Shine-control stick", lane: "finish", layerWeight: 0, coverage: 0, oil: 2, dry: 0, longevity: 1, upkeep: 1, minutes: 1, job: "Mattifies two panels without powder pigment.", examples: ["Clear balm-format shine sticks"] },
+
+  /* ── Eye, extended ── */
+  { id: "brow-pencil", label: "Brow pencil", lane: "eye", layerWeight: 0, coverage: 0, oil: 1, dry: 0, longevity: 2, upkeep: 1, minutes: 2, job: "Builds a brow shape where hair is missing.", examples: ["Zao Organic Brow Pencil", "Elate Brow Pencil"] },
+  { id: "eyeliner-pencil", label: "Soft eyeliner", lane: "eye", layerWeight: 0, coverage: 0, oil: 0, dry: 0, longevity: 2, upkeep: 1, minutes: 2, job: "Definition at the lash line, no complexion cost.", examples: ["NUDESTIX Magnetic Eye Pencil", "Lawless Smokey Liner"] },
+  { id: "shadow-duo", label: "Powder shadow duo", lane: "eye", layerWeight: 1, coverage: 0, oil: 1, dry: -1, longevity: 2, upkeep: 1, minutes: 4, job: "Gradient control — costs minutes, not layers.", examples: ["Athr Beauty shadow palettes", "W3LL PEOPLE Elitist Shadow"] },
+
+  /* ── Lip, extended ── */
+  { id: "lip-oil", label: "Lip oil", lane: "lip", layerWeight: 0, coverage: 0, oil: 0, dry: 2, longevity: 0, upkeep: 3, minutes: 1, job: "Shine and comfort, reapplied constantly.", examples: ["ILIA Balmy Gloss Lip Oil"] },
+  { id: "satin-lipstick", label: "Satin lipstick", lane: "lip", layerWeight: 0, coverage: 0, oil: 0, dry: 1, longevity: 2, upkeep: 2, minutes: 1, job: "The single most visible effort signal on the face.", examples: ["Axiology Balmies", "Kjaer Weis Lipstick", "Vapour Siren Lipstick"] },
+  { id: "lip-liner", label: "Lip liner", lane: "lip", layerWeight: 0, coverage: 0, oil: 0, dry: 0, longevity: 3, upkeep: 0, minutes: 1, job: "Holds a lip through dinner without a second coat.", examples: ["Elate Lip Liner", "Zao Lip Pencil"] },
+
+  /* ── Care / prep ── */
+  { id: "hydrating-prep", label: "Hydrating prep layer", lane: "care", layerWeight: 0, coverage: 0, oil: 0, dry: 2, longevity: 1, upkeep: 0, minutes: 1, job: "The only reliable anti-cake step, and it is not makeup.", examples: ["Any humectant serum under base"] },
+  { id: "mineral-spf", label: "Untinted mineral SPF", lane: "care", layerWeight: 0, coverage: 0, oil: 0, dry: 1, longevity: 2, upkeep: 1, minutes: 1, job: "UV strategy kept separate from colour.", examples: ["EltaMD UV Clear", "Coola Mineral Face SPF 30"] },
 ];
 
 export const TYPE_MAP = Object.fromEntries(TYPES.map((t) => [t.id, t]));
@@ -88,6 +123,11 @@ export const TOOLS: { id: string; label: string }[] = [
   { id: "spoolie", label: "Spoolie" },
   { id: "lash-curler", label: "Lash curler" },
   { id: "airbrush", label: "Airbrush system" },
+  { id: "duo-fibre-brush", label: "Duo-fibre brush" },
+  { id: "mini-sponge", label: "Mini precision sponge" },
+  { id: "shadow-blender", label: "Shadow blending brush" },
+  { id: "lip-brush", label: "Lip brush" },
+  { id: "brow-brush", label: "Angled brow brush" },
 ];
 
 export interface Preset {
@@ -133,6 +173,27 @@ export const PRESETS: Preset[] = [
     line: "Spot, brow, balm. Nothing else.",
     promise: "Permission to drop conventional base entirely.",
     profile: { goals: ["wear-less", "simplify", "alternatives"], coverage: 8, ceiling: 4, desire: 0, maintenance: 0, timeBudget: 5 },
+  },
+  {
+    id: "sebum-city",
+    name: "Sebum city",
+    line: "Thin base, blotting over re-powdering.",
+    promise: "Oil moves the base — so the base has to be thin.",
+    profile: { goals: ["shine", "escape-pancake", "even-tone"], skin: "oily", climate: "humid", coverage: 32, ceiling: 6, desire: 1, maintenance: 1, timeBudget: 10, bag: ["full-foundation", "pressed-powder", "primer"] },
+  },
+  {
+    id: "carry-on",
+    name: "Carry-on capsule",
+    line: "Four objects, every one doing two jobs.",
+    promise: "Travel is a complexity ceiling with a zip.",
+    profile: { goals: ["simplify", "fast-polish", "alternatives"], coverage: 22, ceiling: 4, desire: 2, maintenance: 0, timeBudget: 7, budget: "mid", bag: ["multi-stick", "lip-cheek-balm", "mascara"] },
+  },
+  {
+    id: "on-camera",
+    name: "Photographed & on camera",
+    line: "Definition and diffusion, never opacity.",
+    promise: "Lenses punish layers before they punish colour.",
+    profile: { goals: ["event", "awake", "even-tone"], coverage: 42, ceiling: 8, desire: 3, maintenance: 2, timeBudget: 22, concerns: ["texture"], bag: ["full-foundation", "setting-powder", "powder-highlighter"] },
   },
 ];
 
@@ -192,6 +253,25 @@ export const BRANDS: DeskBrand[] = [
   { name: "La Roche-Posay", family: "Sensitive", lane: "Derm-adjacent base", note: "Sensitive-positioned tinted formulas for cautious everyday wear.", best: ["Sensitive-aware", "Light coverage everyday"], less: ["Full glam colour play"], examples: ["Toleriane-style sensitive tinted moisturiser"], filters: ["fragranceFree"] },
   { name: "Tower 28", family: "Sensitive", lane: "Sensitive-aware clean", note: "Simplified formulas for redness-prone and cautious users. Education, not diagnosis.", best: ["Sensitive / redness-prone", "Fragrance-cautious"], less: ["Full-coverage performance only"], examples: ["SOS Daily Rescue context", "BeachPlease Lip + Cheek", "Swipe Serum Concealer", "MakeWaves Concealer"], filters: ["fragranceFree", "vegan"] },
   { name: "The Desk", family: "Sensitive", lane: "House lane", note: "Sensitive-aware pathway examples held as education, never as ranking or safety score.", best: ["Cautious reintroduction after a reaction"], less: ["Medical clearance — the desk never provides that"], examples: ["Spot-only architecture", "Balm + brow only days"], filters: ["fragranceFree"] },
+  { name: "Hourglass", family: "Multi-use", also: "Skin tint", lane: "Optical luxury complexion", note: "Soft-focus, light-diffusing textures — the polished end of skin-like.", best: ["Photographed and on-camera days", "Blur without opacity"], less: ["Strict mineral-only filters", "Lean budget"], examples: ["Veil Hydrating Skin Tint", "Vanish Airbrush Powder (used sparingly)", "Ambient Lighting Powder"], filters: ["vegan"] },
+  { name: "Chantecaille", family: "Botanical", also: "Skin tint", lane: "Botanical luxury", note: "Floral-water complexion with a genuinely sheer film. Expensive by design.", best: ["Sheer luminous base", "Dry or mature skin"], less: ["Full coverage", "Lean budget"], examples: ["Just Skin Tinted Moisturizer", "Cheek Shade"], filters: [] },
+  { name: "Vapour Beauty", family: "Botanical", also: "Multi-use", lane: "Organic stick multi-use", note: "Stick complexion and colour that press in with fingers alone.", best: ["Capsule kits", "Cream colour preference"], less: ["Matte powder architecture"], examples: ["Soft Focus Foundation Stick", "Aura Multi Use Blush", "Siren Lipstick"], filters: ["vegan"] },
+  { name: "Axiology", family: "Botanical", lane: "Zero-waste lip", note: "Balm-to-lip crayons — the lip lane with no packaging weight.", best: ["Lip-led finish signal", "Plastic-free preference"], less: ["Long-wear transfer-proof lip"], examples: ["Balmies", "Lip-to-Lid Balmie"], filters: ["vegan"] },
+  { name: "Clove + Hallow", family: "Sensitive", also: "Multi-use", lane: "Accessible clean colour", note: "Straightforward clean formulas at a real-world price.", best: ["Lean budget with clean filters", "Spot concealing"], less: ["Luxury texture expectations"], examples: ["Conceal + Correct", "Liquid Lip Velvet"], filters: ["vegan", "fragranceFree"] },
+  { name: "Athr Beauty", family: "Botanical", lane: "Crystal-infused colour", note: "Palette-led colour for eye and highlight without base weight.", best: ["Eye definition", "Powder highlight on non-dry skin"], less: ["Very dry skin wanting cream only"], examples: ["Eyeshadow Palettes", "Crystal Highlighter"], filters: ["vegan"] },
+  { name: "Odacité", family: "Botanical", also: "Sensitive", lane: "Skincare-first house", note: "Prep and hydration lane — the step that prevents cake before makeup starts.", best: ["Hydrating prep under any base"], less: ["Colour pay-off is the goal"], examples: ["Serum Concentrates", "Mineral SPF"], filters: ["vegan"] },
+  { name: "Coola", family: "Hybrid SPF", lane: "Lifestyle SPF", note: "Outdoor-first SPF including untinted mineral fluids.", best: ["Outdoors often", "SPF separate from colour"], less: ["Indoor-only with no UV interest"], examples: ["Mineral Face SPF 30", "Mineral Silk Crème"], filters: ["mineral", "vegan"] },
+  { name: "Zao Organic", family: "Botanical", also: "Mineral", lane: "Refillable organic", note: "Bamboo refill system across brow, liner and lip — low-waste definition lane.", best: ["Brow and liner definition", "Refill preference"], less: ["Serum tint sheerness"], examples: ["Brow Pencil", "Lip Pencil", "Mineral Cooked Powder"], filters: ["mineral", "vegan"] },
+  { name: "W3LL PEOPLE", family: "Mineral", also: "Sensitive", lane: "Mineral everyday", note: "Mineral colour and bio-tints for uncomplicated everyday wear.", best: ["Mineral filters", "Light everyday base"], less: ["Luxury finish expectations"], examples: ["Bio Tint Multi-Action Moisturizer", "Elitist Shadow"], filters: ["mineral", "vegan"] },
+  { name: "Youngblood", family: "Mineral", lane: "Pro mineral", note: "Pro-counter mineral powders and bronzers used in salon settings.", best: ["Mineral powder pathway", "Oilier skin"], less: ["Dry skin without hydrating prep"], examples: ["Natural Loose Mineral Foundation", "Pressed Mineral Bronzer"], filters: ["mineral"] },
+  { name: "Mineral Fusion", family: "Mineral", lane: "Pharmacy mineral", note: "Widely available mineral formulas — the accessible mineral entry point.", best: ["Lean budget with mineral filter"], less: ["Shade-precision liquid match"], examples: ["Pressed Powder Foundation", "Sheer Tint Base"], filters: ["mineral", "vegan"] },
+  { name: "Sappho New Paradigm", family: "Botanical", also: "Skin tint", lane: "Pro botanical", note: "Film-industry-adjacent botanical complexion built for close-up light.", best: ["On-camera botanical base", "Medium coverage without powder"], less: ["Ultra-sheer no-base days"], examples: ["Essential Foundation", "New Light Concealer"], filters: ["vegan"] },
+  { name: "Elate Cosmetics", family: "Botanical", lane: "Refillable botanical", note: "Bamboo-refill palettes and pencils for a low-waste definition kit.", best: ["Brow and eye definition", "Refill preference"], less: ["High-coverage base"], examples: ["Brow Pencil", "Lip Liner", "Pressed Blush"], filters: ["vegan"] },
+  { name: "NUDESTIX", family: "Multi-use", lane: "Pencil multi-use", note: "Everything in pencil format — the fastest definition lane there is.", best: ["Five-minute routines", "Eye and lip in one object"], less: ["Sheer liquid base preference"], examples: ["Magnetic Eye Pencil", "Nudies Matte Blush + Bronze"], filters: ["vegan"] },
+  { name: "Trèstique", family: "Multi-use", lane: "Travel multi-use", note: "Dual-ended sticks with the tool attached — built for a carry-on ceiling.", best: ["Travel capsules", "Tool-free application"], less: ["Precision liquid work"], examples: ["Cream Blush Stick", "Brow Pencil"], filters: ["vegan"] },
+  { name: "Honest Beauty", family: "Sensitive", lane: "Accessible sensitive", note: "Fragrance-cautious everyday colour at pharmacy access.", best: ["Fragrance-free filters", "Lean budget"], less: ["Long-wear event performance"], examples: ["Tinted Lip Balm", "Everything Cream Blush"], filters: ["fragranceFree", "vegan"] },
+  { name: "Beautycounter", family: "Skin tint", also: "Sensitive", lane: "Screened complexion", note: "Ingredient-screened complexion with a full base-to-colour range.", best: ["Light-to-medium base", "Screened-formula preference"], less: ["Mineral-pigment-only filters"], examples: ["Skin Twin Featherweight Foundation", "Cheeky Clean Cream Blush"], filters: ["vegan"] },
+  { name: "Lawless Beauty", family: "Multi-use", lane: "Clean glam", note: "Clean formulas aimed at definition and longevity rather than sheerness.", best: ["Event definition", "Liner and lip longevity"], less: ["Wear-less and no-base goals"], examples: ["Smokey Liner", "Forget the Filler Lip Plumper"], filters: ["vegan"] },
 ];
 
 export const FAMILIES = ["Mineral", "Hybrid SPF", "Skin tint", "Botanical", "Multi-use", "Sensitive"] as const;

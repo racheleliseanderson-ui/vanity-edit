@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Page } from "@/components/mi/chrome";
-import { Chip, Meter, RiskDial, Slider, Spectrum } from "@/components/mi/viz";
+import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
   CONCERNS,
   DEFAULT_PROFILE,
@@ -54,6 +54,8 @@ function EditRoute() {
 
   const edit = useMemo(() => runEdit(profile), [profile]);
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
+  const [openType, setOpenType] = useState<string | null>(null);
+  const [openPath, setOpenPath] = useState<string | null>(null);
 
   return (
     <Page>
@@ -89,6 +91,11 @@ function EditRoute() {
               <RiskDial arch={edit.architecture} />
               <div className="mt-6">
                 <Spectrum value={edit.architecture.risk} />
+              </div>
+              <div className="mt-7 grid grid-cols-3 gap-4 border-t border-border pt-5">
+                <Stat k="Objects" v={`${edit.kit.items.length}/${edit.kit.ceiling}`} />
+                <Stat k="Films" v={`${edit.kit.layers}`} />
+                <Stat k="Tension" v={`${edit.kit.tension}`} />
               </div>
             </div>
           </div>
@@ -221,12 +228,39 @@ function EditRoute() {
 
           {stage === "Match" && (
             <Section title="Makeup Match" lead="Product types scored against your profile. Layer weight is penalised, not celebrated.">
+              <div className="panel mb-10 p-7">
+                <p className="eyebrow">Move one input</p>
+                <h3 className="display mt-2 text-3xl">What each adjustment would actually cost you</h3>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  Every row is the same engine re-run with one field changed. Nothing here is applied until you touch the
+                  instrument panel.
+                </p>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                  {edit.whatIf.map((w) => (
+                    <div key={w.id} className="border border-border p-4 transition-colors hover:border-champagne/50">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p className="text-sm">{w.label}</p>
+                        <span
+                          className="text-[0.72rem] tabular-nums tracking-[0.16em]"
+                          style={{ color: w.delta === 0 ? "var(--muted-foreground)" : w.delta < 0 ? "var(--tone-good)" : "var(--tone-warn)" }}
+                        >
+                          {w.delta > 0 ? `+${w.delta}` : w.delta} risk
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[0.68rem] tracking-[0.16em] uppercase text-muted-foreground">
+                        {w.move} · risk {w.risk} · {w.kitSize} objects
+                      </p>
+                      <p className="mt-2 text-xs leading-snug text-muted-foreground">{w.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="mb-10 grid gap-4 sm:grid-cols-2">
                 {edit.architecture.contributions.map((c) => (
                   <div key={c.label} className="panel p-5">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="text-sm">{c.label}</p>
-                      <span className={`text-[0.7rem] tracking-[0.2em] uppercase ${c.delta > 0 ? "text-rouge" : "text-champagne"}`}>
+                      <span className="text-[0.7rem] tabular-nums tracking-[0.2em] uppercase" style={{ color: c.delta > 0 ? "var(--tone-warn)" : "var(--tone-good)" }}>
                         {c.delta > 0 ? `+${c.delta}` : c.delta}
                       </span>
                     </div>
@@ -235,7 +269,7 @@ function EditRoute() {
                 ))}
               </div>
               <div className="divide-y divide-border border-y border-border">
-                {edit.types.slice(0, 14).map((t) => (
+                {edit.types.slice(0, 18).map((t) => (
                   <article key={t.id} className="grid gap-5 py-7 md:grid-cols-[1.1fr_1fr]">
                     <div>
                       <p className="text-[0.62rem] tracking-[0.26em] uppercase text-muted-foreground">
@@ -249,6 +283,18 @@ function EditRoute() {
                           <Meter value={(t.layerWeight / 3) * 100} label="Layer weight" right={`${t.layerWeight} / 3`} tone="oxblood" />
                         </div>
                       </div>
+                      <button
+                        onClick={() => setOpenType(openType === t.id ? null : t.id)}
+                        className="no-print mt-5 text-[0.62rem] tracking-[0.26em] uppercase text-champagne transition-opacity hover:opacity-70"
+                        aria-expanded={openType === t.id}
+                      >
+                        {openType === t.id ? "Hide the maths" : "Why it scored this"}
+                      </button>
+                      {openType === t.id && (
+                        <div className="stage-in mt-5 border-l border-champagne/40 pl-5">
+                          <Ledger items={t.breakdown} caption="Score ledger · from a neutral 50" />
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-3 text-sm">
                       <ul className="space-y-1">
@@ -272,7 +318,7 @@ function EditRoute() {
           )}
 
           {stage === "Alternatives" && (
-            <Section title="Alternative pathways" lead="Six routes to the same intention. Each one names what it trades away.">
+            <Section title="Alternative pathways" lead="Nine routes to the same intention. Each one names what it trades away.">
               <div className="space-y-6">
                 {edit.pathways.map((p, i) => (
                   <article key={p.id} className="panel p-7">
@@ -284,6 +330,9 @@ function EditRoute() {
                       </div>
                       <div className="w-full max-w-[220px]">
                         <Meter value={p.fit} label="Fit" right={`${p.fit} / 100`} />
+                        <p className="mt-3 text-[0.62rem] tracking-[0.2em] uppercase text-muted-foreground">
+                          {p.types.length} objects · {p.layers} films · {p.minutes} min
+                        </p>
                       </div>
                     </div>
                     <div className="mt-6 grid gap-6 md:grid-cols-2">
@@ -300,6 +349,18 @@ function EditRoute() {
                         </p>
                       </div>
                     </div>
+                    <button
+                      onClick={() => setOpenPath(openPath === p.id ? null : p.id)}
+                      className="no-print mt-6 text-[0.62rem] tracking-[0.26em] uppercase text-champagne transition-opacity hover:opacity-70"
+                      aria-expanded={openPath === p.id}
+                    >
+                      {openPath === p.id ? "Hide the ledger" : `Why it scored ${p.fit}`}
+                    </button>
+                    {openPath === p.id && (
+                      <div className="stage-in mt-5 max-w-xl border-l border-champagne/40 pl-5">
+                        <Ledger items={p.ledger} caption="Pathway ledger" />
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>
@@ -363,6 +424,9 @@ function EditRoute() {
                 <div className="mt-7">
                   <Meter value={edit.kit.projectedRisk} label="Projected pancake risk for this kit" right={`${edit.kit.projectedRisk} / 100`} tone={edit.kit.projectedRisk > 50 ? "oxblood" : "champagne"} />
                 </div>
+                <div className="mt-8 border-t border-border pt-7">
+                  <Tension value={edit.kit.tension} note={edit.kit.tensionNote} />
+                </div>
                 <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{edit.kit.note}</p>
               </div>
               <div className="mt-8 divide-y divide-border border-y border-border">
@@ -407,9 +471,15 @@ function EditRoute() {
                     {edit.architecture.headline} · pancake risk {edit.architecture.risk} / 100 · skin-like {edit.architecture.skinlike} / 100
                   </p>
                 </header>
+                <div className="grid gap-8 sm:grid-cols-3">
+                  <Stat k="Objects" v={`${edit.kit.items.length} / ${edit.kit.ceiling}`} />
+                  <Stat k="Films on skin" v={`${edit.kit.layers}`} />
+                  <Stat k="Kit tension" v={`${edit.kit.tension} / 100`} />
+                </div>
                 <div>
                   <p className="eyebrow">Architecture</p>
                   <p className="mt-3 max-w-2xl leading-[1.85] text-muted-foreground">{edit.architecture.verdict}</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-[1.85] text-muted-foreground">{edit.kit.tensionNote}</p>
                 </div>
                 <div>
                   <p className="eyebrow">The kit</p>
@@ -435,6 +505,16 @@ function EditRoute() {
                       {edit.pathways[0]?.name} — {edit.pathways[0]?.tradeoff}
                     </p>
                   </div>
+                </div>
+                <div>
+                  <p className="eyebrow">The next best single move</p>
+                  <ul className="mt-4 space-y-2 text-sm">
+                    {edit.whatIf.slice(0, 3).map((w) => (
+                      <li key={w.id} className="border-b border-border pb-2 text-muted-foreground">
+                        <span className="text-foreground">{w.label} ({w.move})</span> · risk would read {w.risk} ({w.delta > 0 ? `+${w.delta}` : w.delta}). {w.note}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 <div>
                   <p className="eyebrow">Coaching</p>
@@ -474,7 +554,7 @@ function Group({ title, note, children }: { title: string; note: string; childre
 
 function Section({ title, lead, children }: { title: string; lead: string; children: React.ReactNode }) {
   return (
-    <section className="rise">
+    <section className="stage-in">
       <p className="eyebrow">{title}</p>
       <p className="display mt-3 max-w-2xl text-3xl md:text-5xl">{lead}</p>
       <div className="mt-10">{children}</div>
@@ -483,10 +563,20 @@ function Section({ title, lead, children }: { title: string; lead: string; child
 }
 
 function Stat({ k, v }: { k: string; v: string }) {
+  const num = Number(v.split(" ")[0]?.split("/")[0]);
   return (
     <div>
       <p className="text-[0.62rem] tracking-[0.26em] uppercase text-muted-foreground">{k}</p>
-      <p className="display mt-2 text-3xl">{v}</p>
+      <p className="display mt-2 text-3xl tabular-nums">
+        {Number.isFinite(num) ? (
+          <>
+            <DeltaNumber value={num} />
+            {v.slice(String(num).length)}
+          </>
+        ) : (
+          v
+        )}
+      </p>
     </div>
   );
 }

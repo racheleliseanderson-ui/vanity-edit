@@ -1,15 +1,20 @@
-import type { Architecture } from "@/lib/mi/types";
+import { useEffect, useRef, useState } from "react";
+
+import type { Architecture, Contribution } from "@/lib/mi/types";
+
+export function riskTone(risk: number) {
+  return risk < 25 ? "var(--tone-good)" : risk < 45 ? "var(--tone-fair)" : risk < 65 ? "var(--tone-warn)" : "var(--tone-bad)";
+}
 
 export function RiskDial({ arch, compact = false }: { arch: Architecture; compact?: boolean }) {
   const r = 54;
   const circ = Math.PI * r; // semicircle
   const dash = (arch.risk / 100) * circ;
-  const tone =
-    arch.risk < 25 ? "oklch(0.72 0.05 150)" : arch.risk < 45 ? "oklch(0.83 0.085 82)" : arch.risk < 65 ? "oklch(0.66 0.14 34)" : "oklch(0.55 0.18 18)";
+  const tone = riskTone(arch.risk);
   return (
     <div className="flex items-center gap-5">
       <svg width={140} height={84} viewBox="0 0 140 84" className="shrink-0" aria-hidden>
-        <path d="M16 76 A54 54 0 0 1 124 76" fill="none" stroke="oklch(0.98 0.01 80 / 12%)" strokeWidth="9" strokeLinecap="round" />
+        <path d="M16 76 A54 54 0 0 1 124 76" fill="none" stroke="var(--track)" strokeWidth="9" strokeLinecap="round" />
         <path
           d="M16 76 A54 54 0 0 1 124 76"
           fill="none"
@@ -19,12 +24,13 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
           strokeDasharray={`${dash} ${circ}`}
           style={{ transition: "stroke-dasharray 600ms cubic-bezier(0.16,1,0.3,1), stroke 400ms" }}
         />
-        <text x="70" y="66" textAnchor="middle" className="display" fill="currentColor" fontSize="30">
-          {arch.risk}
-        </text>
       </svg>
+      <span className="sr-only">Pancake risk {arch.risk} out of 100</span>
       <div>
         <p className="eyebrow">Pancake risk</p>
+        <p className="display text-5xl leading-none" style={{ color: tone }}>
+          <DeltaNumber value={arch.risk} />
+        </p>
         <p className="display mt-1 text-2xl" style={{ color: tone }}>
           {arch.headline}
         </p>
@@ -39,8 +45,13 @@ export function Spectrum({ value, labels }: { value: number; labels?: [string, s
     <div>
       <div className="relative h-[6px] w-full rounded-full spectrum-bar">
         <span
-          className="absolute -top-[7px] h-5 w-5 -translate-x-1/2 rounded-full border border-background bg-foreground shadow-[0_0_18px_oklch(0.83_0.085_82/60%)]"
-          style={{ left: `${value}%`, transition: "left 600ms cubic-bezier(0.16,1,0.3,1)" }}
+          className="absolute -top-[7px] h-5 w-5 -translate-x-1/2 rounded-full bg-foreground"
+          style={{
+            left: `${value}%`,
+            border: "1px solid var(--marker-ring)",
+            boxShadow: "var(--marker-glow)",
+            transition: "left 600ms cubic-bezier(0.16,1,0.3,1)",
+          }}
         />
       </div>
       <div className="mt-3 flex justify-between text-[0.65rem] tracking-[0.22em] uppercase text-muted-foreground">
@@ -133,5 +144,104 @@ export function Slider({
         className="mt-3 h-[3px] w-full appearance-none bg-secondary accent-[oklch(0.83_0.085_82)]"
       />
     </label>
+  );
+}
+
+/* ─────────── Live numbers ─────────── */
+
+export function DeltaNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const prev = useRef(value);
+  const [flash, setFlash] = useState<"up" | "down" | null>(null);
+
+  useEffect(() => {
+    if (value === prev.current) return;
+    setFlash(value > prev.current ? "up" : "down");
+    prev.current = value;
+    const t = setTimeout(() => setFlash(null), 1100);
+    return () => clearTimeout(t);
+  }, [value]);
+
+  return (
+    <span key={flash ? `${value}-${flash}` : value} className={flash === "up" ? "flash-up" : flash === "down" ? "flash-down" : undefined}>
+      {value}
+      {suffix}
+    </span>
+  );
+}
+
+/* ─────────── Signed ledger bars ─────────── */
+
+export function Ledger({ items, caption }: { items: Contribution[]; caption?: string }) {
+  const max = Math.max(1, ...items.map((i) => Math.abs(i.delta)));
+  return (
+    <div className="space-y-3">
+      {caption && <p className="text-[0.6rem] tracking-[0.26em] uppercase text-muted-foreground">{caption}</p>}
+      {items.map((c) => {
+        const pos = c.delta > 0;
+        return (
+          <div key={`${c.label}-${c.delta}`} className="group">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-xs">{c.label}</span>
+              <span className="text-[0.66rem] tracking-[0.18em] tabular-nums" style={{ color: pos ? "var(--tone-good)" : "var(--tone-warn)" }}>
+                {pos ? `+${c.delta}` : c.delta}
+              </span>
+            </div>
+            <div className="mt-1.5 flex h-[3px] w-full items-center">
+              <div className="flex h-full w-1/2 justify-end">
+                {!pos && (
+                  <span
+                    className="h-full"
+                    style={{ width: `${(Math.abs(c.delta) / max) * 100}%`, background: "var(--tone-warn)", transition: "width 600ms cubic-bezier(0.16,1,0.3,1)" }}
+                  />
+                )}
+              </div>
+              <span className="h-[7px] w-px bg-border" />
+              <div className="flex h-full w-1/2">
+                {pos && (
+                  <span
+                    className="h-full"
+                    style={{ width: `${(Math.abs(c.delta) / max) * 100}%`, background: "var(--tone-good)", transition: "width 600ms cubic-bezier(0.16,1,0.3,1)" }}
+                  />
+                )}
+              </div>
+            </div>
+            <p className="mt-1 text-[0.68rem] leading-snug text-muted-foreground">{c.note}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─────────── Kit tension ─────────── */
+
+export function Tension({ value, note }: { value: number; note: string }) {
+  const tone = value < 20 ? "var(--tone-good)" : value < 45 ? "var(--tone-fair)" : value < 70 ? "var(--tone-warn)" : "var(--tone-bad)";
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-4">
+        <span className="text-[0.62rem] tracking-[0.26em] uppercase text-muted-foreground">Kit tension</span>
+        <span className="display text-2xl tabular-nums" style={{ color: tone }}>
+          <DeltaNumber value={value} />
+        </span>
+      </div>
+      <div className="mt-3 flex gap-[3px]">
+        {Array.from({ length: 24 }).map((_, i) => {
+          const on = (i + 1) / 24 <= value / 100;
+          return (
+            <span
+              key={i}
+              className="h-6 flex-1"
+              style={{
+                background: on ? tone : "var(--track)",
+                opacity: on ? 0.35 + (i / 24) * 0.65 : 1,
+                transition: "background 400ms, opacity 400ms",
+              }}
+            />
+          );
+        })}
+      </div>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p>
+    </div>
   );
 }
