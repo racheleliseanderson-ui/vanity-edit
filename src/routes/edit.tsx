@@ -54,22 +54,72 @@ function toggle<T>(arr: T[], v: T) {
 }
 
 function EditRoute() {
-  const { path } = Route.useSearch();
+  const search = Route.useSearch();
+  const { path } = search;
+  const navigate = useNavigate({ from: Route.fullPath });
+  const incomingBag = useMemo(
+    () => (search.bag ? search.bag.split(",").filter((id) => TYPE_MAP[id]) : []),
+    [search.bag],
+  );
   const [profile, setProfile] = useState<Profile>(() => {
     const preset = PRESETS.find((p) => p.id === path);
-    return { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    const base: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    return incomingBag.length ? { ...base, bag: [...new Set([...base.bag, ...incomingBag])] } : base;
   });
-  const [stage, setStage] = useState<Stage>("Match");
+  const [stage, setStageState] = useState<Stage>(() =>
+    STAGES.includes(search.stage as Stage) ? (search.stage as Stage) : "Match",
+  );
+  const [panelOpen, setPanelOpen] = useState(false);
+  const setStage = (s: Stage) => {
+    setStageState(s);
+    void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, stage: s === "Match" ? undefined : s }), replace: true });
+  };
   const [activePreset, setActivePreset] = useState<string | undefined>(path);
 
   const edit = useMemo(() => runEdit(profile), [profile]);
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
-  const [moves, setMoves] = useState<string[]>(["coverage-down", "maint-up"]);
+  const [moves, setMovesState] = useState<string[]>(() =>
+    search.moves ? search.moves.split(",").filter((m) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
+  );
+  const setMoves = (next: string[] | ((prev: string[]) => string[])) =>
+    setMovesState((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      void navigate({
+        search: (s: Record<string, unknown>) => ({ ...s, moves: value.length ? value.join(",") : undefined }),
+        replace: true,
+      });
+      return value;
+    });
   const offers = useMemo(() => availableMoves(profile), [profile]);
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
   const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
+  const baseline = columns[0];
+
+  /** Apply one costed move straight into the live profile. */
+  const applyMove = (id: string) => {
+    const def = SCENARIO_MOVES.find((m) => m.id === id);
+    if (!def) return;
+    setProfile((p) => def.move(p));
+    setActivePreset(undefined);
+  };
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onTabKey = (e: React.KeyboardEvent, i: number) => {
+    const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const next = dir === -99 ? 0 : dir === 99 ? STAGES.length - 1 : (i + dir + STAGES.length) % STAGES.length;
+    setStage(STAGES[next]!);
+    tabRefs.current[next]?.focus();
+  };
+
+  useEffect(() => {
+    if (panelOpen) setPanelOpen(false);
+    // close the mobile drawer whenever the stage changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
 
   return (
     <Page>
