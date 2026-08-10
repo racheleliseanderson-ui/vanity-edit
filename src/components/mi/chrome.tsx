@@ -14,19 +14,19 @@ const NAV = [
 export function Header() {
   return (
     <header className="no-print sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-5 py-4 md:px-10">
-        <Link to="/" className="group leading-none">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 md:flex md:justify-between md:gap-6 md:px-10">
+        <Link to="/" className="group min-w-0 leading-none">
           <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
-          <span className="display mt-1 block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
+          <span className="display mt-1 block truncate text-xl md:text-[1.7rem]">Makeup Intelligence</span>
         </Link>
-        <div className="flex items-center gap-2 md:gap-4">
-          <nav className="flex items-center gap-1 md:gap-2">
+        <div className="flex shrink-0 items-center gap-2 md:gap-4">
+          <nav aria-label="Primary" className="-mx-1 flex max-w-[52vw] items-center gap-1 overflow-x-auto px-1 md:max-w-none md:gap-2">
             {NAV.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
                 activeOptions={{ exact: n.to === "/" }}
-                className="rounded-full px-2 py-2 text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-champagne md:px-3 md:text-[0.78rem]"
+                className="flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full px-2 text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-champagne md:px-3 md:text-[0.78rem]"
               >
                 {n.label}
               </Link>
@@ -57,9 +57,15 @@ export function Footer() {
 
 export function Page({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
+      <a
+        href="#main"
+        className="no-print sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:border focus:border-champagne focus:bg-background focus:px-4 focus:py-3 focus:text-xs focus:uppercase focus:tracking-[0.24em] focus:text-champagne"
+      >
+        Skip to content
+      </a>
       <Header />
-      {children}
+      <main id="main">{children}</main>
       <Footer />
     </div>
   );
