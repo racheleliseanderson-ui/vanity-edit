@@ -636,12 +636,12 @@ function EditRoute() {
                     too, so it travels.
                   </p>
                   {sets.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {sets.map((s) => (
-                        <span
+                    <ul className="mt-5 grid list-none gap-3 p-0">
+                      {sets.map((s, i) => (
+                        <li
                           key={s.name}
-                          className={`inline-flex items-stretch border ${
-                            loadedSet === s.name ? "border-champagne bg-champagne/10" : "border-border"
+                          className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border p-3 ${
+                            loadedSet === s.name ? "border-champagne bg-champagne/[0.06]" : "border-border"
                           }`}
                         >
                           <button
@@ -649,26 +649,61 @@ function EditRoute() {
                               setMoves(s.moves);
                               setLoadedSet(s.name);
                               setSetName(s.name);
+                              setSets(markScenarioSetUsed(s.name));
                             }}
-                            className={`min-h-11 px-4 py-2 text-[0.64rem] tracking-[0.18em] uppercase transition-colors ${
-                              loadedSet === s.name ? "text-champagne" : "text-muted-foreground hover:text-foreground"
-                            }`}
+                            className={`min-w-0 text-left ${loadedSet === s.name ? "text-champagne" : "text-foreground"}`}
                           >
-                            {s.name} <span className="opacity-60">· {s.moves.length}</span>
+                            <span className="block truncate text-sm">{s.name}</span>
+                            <span className="block text-[0.58rem] tracking-[0.2em] uppercase text-muted-foreground">
+                              {s.moves.length} moves · saved {new Date(s.saved).toLocaleDateString()}
+                            </span>
                           </button>
-                          <button
-                            onClick={() => {
-                              setSets(removeScenarioSet(s.name));
-                              if (loadedSet === s.name) setLoadedSet(undefined);
-                            }}
-                            aria-label={`Remove the ${s.name} scenario set`}
-                            className="min-h-11 border-l border-border px-3 text-xs text-muted-foreground transition-colors hover:text-rouge"
-                          >
-                            ×
-                          </button>
-                        </span>
+                          <div className="flex shrink-0 flex-wrap items-center gap-1">
+                            <IconAction label={`Move ${s.name} up`} disabled={i === 0} onClick={() => setSets(reorderScenarioSet(s.name, -1))}>
+                              ↑
+                            </IconAction>
+                            <IconAction
+                              label={`Move ${s.name} down`}
+                              disabled={i === sets.length - 1}
+                              onClick={() => setSets(reorderScenarioSet(s.name, 1))}
+                            >
+                              ↓
+                            </IconAction>
+                            <IconAction label={`Duplicate ${s.name}`} onClick={() => setSets(duplicateScenarioSet(s.name))}>
+                              ⧉
+                            </IconAction>
+                            <IconAction
+                              label={`Rename ${s.name}`}
+                              onClick={() => {
+                                const next = window.prompt("New name for this set", s.name);
+                                if (next && next.trim()) {
+                                  setSets(renameScenarioSet(s.name, next));
+                                  if (loadedSet === s.name) setLoadedSet(next.trim());
+                                }
+                              }}
+                            >
+                              ✎
+                            </IconAction>
+                            <IconAction
+                              label={`Export the ${s.name} compare packet`}
+                              onClick={() => downloadComparePacket(edit, profile, columns, moveDefs, s.name)}
+                            >
+                              ↓pk
+                            </IconAction>
+                            <IconAction
+                              label={`Delete the ${s.name} scenario set`}
+                              tone="rouge"
+                              onClick={() => {
+                                setSets(removeScenarioSet(s.name));
+                                if (loadedSet === s.name) setLoadedSet(undefined);
+                              }}
+                            >
+                              ×
+                            </IconAction>
+                          </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <label className="sr-only" htmlFor="set-name">
@@ -698,6 +733,35 @@ function EditRoute() {
                     >
                       Export the compare packet
                     </button>
+                  </div>
+                  <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <label className="block">
+                      <span className="text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground">
+                        Restore a set from a shared link
+                      </span>
+                      <input
+                        value={importLink}
+                        onChange={(e) => setImportLink(e.target.value)}
+                        placeholder="Paste an /edit?moves=… link"
+                        className="mt-2 min-h-11 w-full border border-border bg-transparent px-4 py-2 text-sm placeholder:text-muted-foreground"
+                      />
+                    </label>
+                    <button
+                      onClick={() => {
+                        const next = importScenarioSet(importLink, SCENARIO_MOVES.map((m) => m.id));
+                        if (next) {
+                          setSets(next);
+                          setImportLink("");
+                        } else {
+                          setImportError("No usable moves in that link.");
+                        }
+                      }}
+                      disabled={!importLink.trim()}
+                      className="tap self-end border border-border px-5 text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground disabled:opacity-40"
+                    >
+                      Import
+                    </button>
+                    {importError && <p className="text-xs text-rouge sm:col-span-2">{importError}</p>}
                   </div>
                 </div>
               </div>
