@@ -14,13 +14,21 @@ const NAV = [
 export function Header() {
   return (
     <header className="no-print sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 md:flex md:justify-between md:gap-6 md:px-10">
-        <Link to="/" className="group min-w-0 leading-none">
-          <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
-          <span className="display mt-1 block truncate text-xl md:text-[1.7rem]">Makeup Intelligence</span>
-        </Link>
-        <div className="flex shrink-0 items-center gap-2 md:gap-4">
-          <nav aria-label="Primary" className="-mx-1 flex max-w-[52vw] items-center gap-1 overflow-x-auto px-1 md:max-w-none md:gap-2">
+      <div className="mx-auto max-w-[1400px] px-5 py-3 md:flex md:items-center md:justify-between md:gap-6 md:px-10 md:py-4">
+        <div className="flex items-center justify-between gap-4">
+          <Link to="/" className="group min-w-0 leading-none">
+            <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
+            <span className="display mt-1 block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
+          </Link>
+          <div className="shrink-0 md:hidden">
+            <ThemeToggle />
+          </div>
+        </div>
+        <div className="mt-2 flex items-center gap-2 md:mt-0 md:gap-4">
+          <nav
+            aria-label="Primary"
+            className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto px-1 md:flex-none md:gap-2"
+          >
             {NAV.map((n) => (
               <Link
                 key={n.to}
@@ -32,7 +40,9 @@ export function Header() {
               </Link>
             ))}
           </nav>
-          <ThemeToggle />
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
