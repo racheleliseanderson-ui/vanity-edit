@@ -853,6 +853,12 @@ function EditRoute() {
                   Export the full packet
                 </button>
                 <button
+                  onClick={exportCompare}
+                  className="inline-flex border border-champagne/60 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                >
+                  Export the compare packet
+                </button>
+                <button
                   onClick={() => window.print()}
                   className="inline-flex border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:text-foreground"
                 >
