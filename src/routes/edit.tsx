@@ -10,7 +10,9 @@ import {
   PRESETS,
   TYPE_MAP,
 } from "@/lib/mi/catalog";
-import { runEdit } from "@/lib/mi/engine";
+import { availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { downloadFullPacket } from "@/lib/mi/full-packet";
+import { PRODUCTS } from "@/lib/mi/products";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/edit")({
   component: EditRoute,
 });
 
-const STAGES = ["Match", "Alternatives", "Tools", "Bag", "Kit", "Packet"] as const;
+const STAGES = ["Match", "Compare", "Alternatives", "Tools", "Bag", "Kit", "Packet"] as const;
 type Stage = (typeof STAGES)[number];
 
 const SKINS: SkinType[] = ["dry", "normal", "combination", "oily"];
@@ -56,6 +58,10 @@ function EditRoute() {
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
+  const [moves, setMoves] = useState<string[]>(["coverage-down", "maint-up"]);
+  const offers = useMemo(() => availableMoves(profile), [profile]);
+  const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
+  const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
 
   return (
     <Page>
@@ -317,6 +323,145 @@ function EditRoute() {
             </Section>
           )}
 
+          {stage === "Compare" && (
+            <Section
+              title="Scenario comparison"
+              lead="Run several futures beside each other before you change a single field."
+            >
+              <div className="panel p-6 md:p-8">
+                <p className="eyebrow">Pick the moves to compare</p>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                  Each column is the whole engine re-run — scores, pathway, kit, tools and bag calls — with one field
+                  changed. Up to four at a time. Nothing is applied to your profile.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {offers.map((m) => {
+                    const on = live.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() =>
+                          setMoves((prev) =>
+                            prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id].slice(-4),
+                          )
+                        }
+                        aria-pressed={on}
+                        className={`border px-3 py-2 text-[0.64rem] tracking-[0.18em] uppercase transition-colors ${
+                          on
+                            ? "border-champagne bg-champagne/10 text-champagne"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {m.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-8 overflow-x-auto pb-2">
+                <div
+                  className="grid min-w-[720px] gap-5"
+                  style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))` }}
+                >
+                  {columns.map((c) => (
+                    <article
+                      key={c.id}
+                      className={`stage-in flex flex-col gap-5 border p-5 ${
+                        c.id === "current" ? "border-champagne/60 bg-champagne/[0.04]" : "border-border"
+                      }`}
+                    >
+                      <header>
+                        <p className="eyebrow">{c.id === "current" ? "Baseline" : "Scenario"}</p>
+                        <h3 className="display mt-2 text-2xl leading-tight">{c.label}</h3>
+                        <p className="mt-1 text-[0.62rem] tracking-[0.2em] uppercase text-muted-foreground">{c.move}</p>
+                      </header>
+
+                      <div>
+                        <div className="flex items-baseline gap-3">
+                          <span className="display text-4xl tabular-nums">{c.risk}</span>
+                          {c.id !== "current" && (
+                            <span
+                              className="text-[0.72rem] tabular-nums tracking-[0.16em]"
+                              style={{
+                                color:
+                                  c.delta === 0
+                                    ? "var(--muted-foreground)"
+                                    : c.delta < 0
+                                      ? "var(--tone-good)"
+                                      : "var(--tone-warn)",
+                              }}
+                            >
+                              {c.delta > 0 ? `+${c.delta}` : c.delta}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">
+                          Pancake risk · skin-like {c.skinlike}
+                        </p>
+                        <div className="mt-4 space-y-3">
+                          <Meter value={c.risk} label="Risk" right={`${c.risk}`} tone={c.risk > 50 ? "oxblood" : "champagne"} />
+                          <Meter value={c.tension} label="Tension" right={`${c.tension}`} tone={c.tension > 45 ? "oxblood" : "champagne"} />
+                        </div>
+                      </div>
+
+                      <dl className="grid grid-cols-3 gap-3 border-y border-border py-4 text-center">
+                        <Cell k="Objects" v={`${c.objects}/${c.ceiling}`} />
+                        <Cell k="Films" v={`${c.layers}`} />
+                        <Cell k="Min" v={`${c.minutes}`} />
+                      </dl>
+
+                      <div>
+                        <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Leading pathway</p>
+                        <p className="mt-1 text-sm">
+                          {c.pathway} <span className="text-muted-foreground">· {c.pathwayFit}</span>
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Kit it builds</p>
+                        <ul className="mt-2 space-y-1 text-sm">
+                          {c.kit.map((k) => (
+                            <li key={k.label}>
+                              {k.label} <span className="text-muted-foreground">· {k.lane}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Highest scores</p>
+                        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                          {c.top.map((t) => (
+                            <li key={t.label} className="flex justify-between gap-3">
+                              <span>{t.label}</span>
+                              <span className="tabular-nums">{t.score}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="mt-auto border-t border-border pt-4">
+                        <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Bag decisions</p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {c.bag.keep} keep · {c.bag.differently} use differently · {c.bag.replace} replace when finished
+                        </p>
+                        {c.bag.changed.length > 0 && (
+                          <ul className="mt-2 space-y-1 text-xs text-champagne">
+                            {c.bag.changed.map((ch) => (
+                              <li key={ch}>{ch}</li>
+                            ))}
+                          </ul>
+                        )}
+                        <p className="mt-3 text-xs leading-snug text-muted-foreground">{c.note}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </Section>
+          )}
+
           {stage === "Alternatives" && (
             <Section title="Alternative pathways" lead="Nine routes to the same intention. Each one names what it trades away.">
               <div className="space-y-6">
@@ -439,7 +584,15 @@ function EditRoute() {
                     </div>
                     <div>
                       <p className="text-sm">{it.job}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">Desk example · {it.example}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        On the desk ·{" "}
+                        {PRODUCTS.filter((p) => p.typeId === it.id).length
+                          ? PRODUCTS.filter((p) => p.typeId === it.id)
+                              .slice(0, 3)
+                              .map((p) => `${p.brand} ${p.name} ($${p.price})`)
+                              .join(" · ")
+                          : it.example}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -457,12 +610,26 @@ function EditRoute() {
 
           {stage === "Packet" && (
             <Section title="The edit packet" lead="Print or save as PDF. Yours to take to the counter.">
-              <button
-                onClick={() => window.print()}
-                className="no-print mb-10 inline-flex border border-champagne/50 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
-              >
-                Export the packet
-              </button>
+              <div className="no-print mb-10 flex flex-wrap gap-3">
+                <button
+                  onClick={() => downloadFullPacket(edit, profile, columns)}
+                  className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
+                >
+                  Export the full packet
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Print this summary
+                </button>
+              </div>
+              <p className="no-print mb-10 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                The full packet is a single self-contained file: your inputs, the architecture ledger, every scored
+                product type, all nine pathways, tools, bag calls, coaching, the costed single moves and the{" "}
+                {columns.length} scenario{columns.length === 1 ? "" : "s"} you have lined up — with named formulas and
+                prices beside each kit object. Open it anywhere, or print it to PDF.
+              </p>
               <div className="panel space-y-10 p-8 md:p-12">
                 <header className="border-b border-border pb-6">
                   <p className="eyebrow">Vanity or Vice · Makeup Intelligence</p>
@@ -484,14 +651,36 @@ function EditRoute() {
                 <div>
                   <p className="eyebrow">The kit</p>
                   <ul className="mt-4 space-y-3">
-                    {edit.kit.items.map((it) => (
-                      <li key={it.id} className="border-b border-border pb-3">
-                        <span className="display text-xl">{it.label}</span>
-                        <span className="block text-sm text-muted-foreground">{it.job} · e.g. {it.example}</span>
-                      </li>
-                    ))}
+                    {edit.kit.items.map((it) => {
+                      const named = PRODUCTS.filter((p) => p.typeId === it.id).slice(0, 3);
+                      return (
+                        <li key={it.id} className="border-b border-border pb-3">
+                          <span className="display text-xl">{it.label}</span>
+                          <span className="block text-sm text-muted-foreground">{it.job}</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {named.length
+                              ? named.map((p) => `${p.brand} ${p.name} ($${p.price})`).join(" · ")
+                              : `e.g. ${it.example}`}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
+                {columns.length > 1 && (
+                  <div>
+                    <p className="eyebrow">Scenarios you compared</p>
+                    <ul className="mt-4 space-y-2 text-sm">
+                      {columns.slice(1).map((c) => (
+                        <li key={c.id} className="border-b border-border pb-2 text-muted-foreground">
+                          <span className="text-foreground">{c.label} ({c.move})</span> · risk {c.risk} (
+                          {c.delta > 0 ? `+${c.delta}` : c.delta}) · {c.objects} objects · {c.layers} films · tension{" "}
+                          {c.tension} · {c.pathway}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="grid gap-8 sm:grid-cols-2">
                   <div>
                     <p className="eyebrow">Essential tools</p>
@@ -563,6 +752,19 @@ function Section({ title, lead, children }: { title: string; lead: string; child
 }
 
 function Stat({ k, v }: { k: string; v: string }) {
+  return <StatInner k={k} v={v} />;
+}
+
+function Cell({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <dt className="text-[0.55rem] tracking-[0.22em] uppercase text-muted-foreground">{k}</dt>
+      <dd className="display mt-1 text-xl tabular-nums">{v}</dd>
+    </div>
+  );
+}
+
+function StatInner({ k, v }: { k: string; v: string }) {
   const num = Number(v.split(" ")[0]?.split("/")[0]);
   return (
     <div>

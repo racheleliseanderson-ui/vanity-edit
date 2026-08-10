@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/lib/mi/theme";
 const NAV = [
   { to: "/", label: "Salon" },
   { to: "/edit", label: "The Edit" },
+  { to: "/products", label: "Products" },
   { to: "/desk", label: "Desk" },
   { to: "/insights", label: "Insights" },
 ] as const;

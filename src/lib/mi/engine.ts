@@ -7,6 +7,7 @@ import type {
   Kit,
   Pathway,
   Profile,
+  ScenarioResult,
   Tier,
   ToolCall,
   TypeScore,
@@ -590,4 +591,88 @@ export function runEdit(p: Profile): Edit {
     coach: coach(p, arch, path, kit),
     whatIf: whatIf(p),
   };
+}
+/* ─────────────── Scenario comparison ─────────────── */
+
+export interface ScenarioMoveDef {
+  id: string;
+  label: string;
+  move: (p: Profile) => Profile;
+  moveLabel: (p: Profile) => string;
+  note: string;
+  applies?: (p: Profile) => boolean;
+}
+
+export const SCENARIO_MOVES: ScenarioMoveDef[] = [
+  { id: "coverage-down", label: "Drop coverage 15", move: (p) => ({ ...p, coverage: Math.max(0, p.coverage - 15) }), moveLabel: (p) => `Coverage ${p.coverage} → ${Math.max(0, p.coverage - 15)}`, note: "The single most efficient lever in the system.", applies: (p) => p.coverage > 5 },
+  { id: "coverage-up", label: "Add coverage 15", move: (p) => ({ ...p, coverage: Math.min(100, p.coverage + 15) }), moveLabel: (p) => `Coverage ${p.coverage} → ${Math.min(100, p.coverage + 15)}`, note: "What it costs to ask for more evening.", applies: (p) => p.coverage < 95 },
+  { id: "maint-up", label: "Allow one touch-up", move: (p) => ({ ...p, maintenance: Math.min(3, p.maintenance + 1) }), moveLabel: (p) => `Maintenance ${p.maintenance} → ${p.maintenance + 1}`, note: "Blotting at 2pm buys back more than any product does.", applies: (p) => p.maintenance < 3 },
+  { id: "maint-down", label: "Refuse all touch-ups", move: (p) => ({ ...p, maintenance: 0 }), moveLabel: () => "Maintenance → 0", note: "The finish has to be right at 8am and forgiving at 4pm.", applies: (p) => p.maintenance > 0 },
+  { id: "time-down", label: "Cut five minutes", move: (p) => ({ ...p, timeBudget: Math.max(3, p.timeBudget - 5) }), moveLabel: (p) => `${p.timeBudget} → ${Math.max(3, p.timeBudget - 5)} min`, note: "A shorter routine physically cannot over-build.", applies: (p) => p.timeBudget > 5 },
+  { id: "time-up", label: "Give it ten more minutes", move: (p) => ({ ...p, timeBudget: Math.min(40, p.timeBudget + 10) }), moveLabel: (p) => `${p.timeBudget} → ${Math.min(40, p.timeBudget + 10)} min`, note: "More time tempts layers that were never diagnosed.", applies: (p) => p.timeBudget < 35 },
+  { id: "ceiling-down", label: "Tighten the ceiling", move: (p) => ({ ...p, ceiling: Math.max(3, p.ceiling - 1) }), moveLabel: (p) => `${p.ceiling} → ${p.ceiling - 1} objects`, note: "Forces the weakest lane out of the kit.", applies: (p) => p.ceiling > 3 },
+  { id: "ceiling-up", label: "Open the ceiling", move: (p) => ({ ...p, ceiling: Math.min(12, p.ceiling + 2) }), moveLabel: (p) => `${p.ceiling} → ${Math.min(12, p.ceiling + 2)} objects`, note: "Shows what the engine would add if permitted.", applies: (p) => p.ceiling < 11 },
+  { id: "desire-up", label: "Let desire rise", move: (p) => ({ ...p, desire: Math.min(3, p.desire + 1) }), moveLabel: (p) => `Desire ${p.desire} → ${p.desire + 1}`, note: "Where the appetite lands when you permit it.", applies: (p) => p.desire < 3 },
+  { id: "desire-down", label: "Quiet the ritual", move: (p) => ({ ...p, desire: Math.max(0, p.desire - 1) }), moveLabel: (p) => `Desire ${p.desire} → ${p.desire - 1}`, note: "What the kit loses when appetite drops.", applies: (p) => p.desire > 0 },
+  { id: "goal-anti", label: "Add the anti-pancake goal", move: (p) => ({ ...p, goals: [...p.goals, "escape-pancake"] }), moveLabel: () => "Goal added", note: "Reweights every base score toward skin-like.", applies: (p) => !p.goals.includes("escape-pancake") },
+  { id: "goal-wear-less", label: "Add wear-less permission", move: (p) => ({ ...p, goals: [...p.goals, "wear-less"] }), moveLabel: () => "Goal added", note: "Opens the no-base pathway properly.", applies: (p) => !p.goals.includes("wear-less") },
+  { id: "goal-simplify", label: "Add simplify", move: (p) => ({ ...p, goals: [...p.goals, "simplify"] }), moveLabel: () => "Goal added", note: "Rewards multi-use objects over single-job ones.", applies: (p) => !p.goals.includes("simplify") },
+  { id: "climate-altitude", label: "Move to altitude", move: (p) => ({ ...p, climate: "altitude" }), moveLabel: (p) => `${p.climate} → altitude`, note: "Thin air is the fastest way to break an opaque film.", applies: (p) => p.climate !== "altitude" },
+  { id: "climate-humid", label: "Move to humidity", move: (p) => ({ ...p, climate: "humid" }), moveLabel: (p) => `${p.climate} → humid`, note: "Humidity moves the base sideways instead of cracking it.", applies: (p) => p.climate !== "humid" },
+  { id: "skin-oily", label: "Treat skin as oily", move: (p) => ({ ...p, skin: "oily" }), moveLabel: (p) => `${p.skin} → oily`, note: "Sebum travel reorders every base texture.", applies: (p) => p.skin !== "oily" },
+  { id: "skin-dry", label: "Treat skin as dry", move: (p) => ({ ...p, skin: "dry" }), moveLabel: (p) => `${p.skin} → dry`, note: "Powder falls down the ranking immediately.", applies: (p) => p.skin !== "dry" },
+  { id: "sens-up", label: "Assume reactive skin", move: (p) => ({ ...p, sensitivity: 3 }), moveLabel: (p) => `Sensitivity ${p.sensitivity} → 3`, note: "Cuts films rather than brands.", applies: (p) => p.sensitivity < 3 },
+  { id: "filter-mineral", label: "Add mineral filter", move: (p) => ({ ...p, filters: [...p.filters, "mineral" as const] }), moveLabel: () => "Filter added", note: "A preference, never a safety claim.", applies: (p) => !p.filters.includes("mineral") },
+  { id: "outdoors-up", label: "Spend the day outdoors", move: (p) => ({ ...p, outdoors: 3 }), moveLabel: (p) => `Outdoors ${p.outdoors} → 3`, note: "SPF becomes the product's real job.", applies: (p) => p.outdoors < 3 },
+];
+
+export function availableMoves(p: Profile): ScenarioMoveDef[] {
+  return SCENARIO_MOVES.filter((m) => !m.applies || m.applies(p));
+}
+
+function evaluate(p: Profile, id: string, label: string, move: string, note: string, baseRisk?: number, baseBag?: BagCall[]): ScenarioResult {
+  const types = scoreTypes(p);
+  const kit = buildKit(p, types);
+  const arch = architecture(p, kit.layers);
+  const path = pathways(p, types);
+  const bag = bagEdit(p, types);
+  const counts = { keep: 0, differently: 0, replace: 0 };
+  const changed: string[] = [];
+  for (const b of bag) {
+    if (b.verdict === "keep") counts.keep++;
+    else if (b.verdict === "use differently") counts.differently++;
+    else counts.replace++;
+    const before = baseBag?.find((x) => x.id === b.id);
+    if (before && before.verdict !== b.verdict) changed.push(`${b.label}: ${before.verdict} → ${b.verdict}`);
+  }
+  return {
+    id,
+    label,
+    move,
+    note,
+    risk: arch.risk,
+    delta: baseRisk === undefined ? 0 : arch.risk - baseRisk,
+    skinlike: arch.skinlike,
+    layers: kit.layers,
+    minutes: kit.minutes,
+    tension: kit.tension,
+    objects: kit.items.length,
+    ceiling: p.ceiling,
+    kit: kit.items.map((i) => ({ label: i.label, lane: TYPE_MAP[i.id]?.lane ?? "" })),
+    top: types.slice(0, 5).map((t) => ({ label: t.label, score: t.score })),
+    bag: { ...counts, changed: changed.slice(0, 4) },
+    pathway: path[0]?.name ?? "—",
+    pathwayFit: path[0]?.fit ?? 0,
+  };
+}
+
+/** Current profile plus each selected move, evaluated end to end for side-by-side reading. */
+export function compareScenarios(p: Profile, moveIds: string[]): ScenarioResult[] {
+  const current = evaluate(p, "current", "As you have it now", "No change", "Every other column is measured against this one.");
+  const baseBag = bagEdit(p, scoreTypes(p));
+  const rest = moveIds
+    .map((id) => SCENARIO_MOVES.find((m) => m.id === id))
+    .filter((m): m is ScenarioMoveDef => Boolean(m))
+    .map((m) => evaluate(m.move(p), m.id, m.label, m.moveLabel(p), m.note, current.risk, baseBag));
+  return [current, ...rest];
 }
