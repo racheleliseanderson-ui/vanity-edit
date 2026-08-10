@@ -1,10 +1,22 @@
-# Vanity Edit
+# Makeup Intelligence · Vanity Edit
 
-Improve this existing live application:
+**Canonical locations (effective 2026-08-10):**
 
-Application: https://makeup-intelligence.vercel.app/  GitHub Repository https://github.com/racheleliseanderson-ui/makeup-intelligence @connector:github:"GitHub API" 
+| | |
+|--|--|
+| **Production** | https://vanity-makeup.vercel.app |
+| **GitHub** | https://github.com/racheleliseanderson-ui/vanity-edit |
+| **Vercel project** | `vanity-makeup` |
+| **Framework** | TanStack Start · Nitro Fluid · Vercel |
 
-Use the current live version as the baseline. Do not start from scratch — elevate what already exists.
+This repository and deployment supersede the prior locations:
+
+- ~~https://makeup-intelligence.vercel.app/~~ (retired)
+- ~~https://github.com/racheleliseanderson-ui/makeup-intelligence~~ (retired)
+
+All suite cross-links, handoffs, and documentation should point here going forward.
+
+---
 
 Elevate Makeup Intelligence into a high-end, intelligent personal edit instrument under the Vanity or Vice philosophy.
 
@@ -49,8 +61,8 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/racheleliseanderson-ui/vanity-edit.git
+cd vanity-edit
 npm i
 npm run dev
 ```
