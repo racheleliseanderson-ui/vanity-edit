@@ -103,7 +103,7 @@ export function Chip({
         active
           ? "border-champagne/60 bg-champagne/10 text-foreground"
           : "border-border text-muted-foreground hover:border-champagne/40 hover:text-foreground"
-      } border px-4 py-3`}
+      } min-h-11 border px-4 py-3`}
     >
       <span className="block text-sm">{children}</span>
       {note && <span className="mt-1 block text-xs leading-snug opacity-70">{note}</span>}
@@ -141,7 +141,7 @@ export function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-3 h-[3px] w-full appearance-none bg-secondary accent-[oklch(0.83_0.085_82)]"
+        className="mt-3 h-6 w-full cursor-pointer appearance-none bg-transparent accent-[oklch(0.83_0.085_82)] [&::-webkit-slider-runnable-track]:h-[3px] [&::-webkit-slider-runnable-track]:bg-secondary [&::-webkit-slider-thumb]:mt-[-9px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[oklch(0.83_0.085_82)]"
       />
     </label>
   );
