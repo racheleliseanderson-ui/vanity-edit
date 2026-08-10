@@ -103,9 +103,9 @@ function ProductsRoute() {
   const typeId = search.type ?? "";
   const thinOnly = search.thin === true;
   const sort = (SORTS.some((s) => s.id === search.sort) ? (search.sort as SortKey) : "relevance") as SortKey;
-  const lanes = useMemo(() => (search.lanes ? search.lanes.split(",").filter((l) => LANES.includes(l as (typeof LANES)[number])) : []), [search.lanes]);
+  const lanes = useMemo(() => (search.lanes ? search.lanes.split(",").filter((l: string) => LANES.includes(l as (typeof LANES)[number])) : []), [search.lanes]);
   const brands = useMemo(
-    () => (search.brands ? search.brands.split(",").filter((b) => PRODUCT_BRANDS.includes(b)) : []),
+    () => (search.brands ? search.brands.split(",").filter((b: string) => PRODUCT_BRANDS.includes(b)) : []),
     [search.brands],
   );
   const filters = useMemo(
@@ -168,8 +168,8 @@ function ProductsRoute() {
   }, [results]);
   const activeTokens: { label: string; clear: () => void }[] = [
     ...(q ? [{ label: `“${q}”`, clear: () => patch({ q: undefined }) }] : []),
-    ...lanes.map((l) => ({ label: l, clear: () => patch({ lanes: lanes.filter((x) => x !== l).join(",") || undefined }) })),
-    ...brands.map((b) => ({ label: b, clear: () => patch({ brands: brands.filter((x) => x !== b).join(",") || undefined }) })),
+    ...lanes.map((l: string) => ({ label: l, clear: () => patch({ lanes: lanes.filter((x: string) => x !== l).join(",") || undefined }) })),
+    ...brands.map((b: string) => ({ label: b, clear: () => patch({ brands: brands.filter((x: string) => x !== b).join(",") || undefined }) })),
     ...(band ? [{ label: PRICE_BANDS.find((b) => b.id === band)?.label ?? band, clear: () => patch({ band: undefined }) }] : []),
     ...(search.min !== undefined || search.max !== undefined
       ? [{ label: `$${search.min ?? PRICE_EXTENT.min}–$${search.max ?? PRICE_EXTENT.max}`, clear: () => patch({ min: undefined, max: undefined }) }]
@@ -269,7 +269,7 @@ function ProductsRoute() {
                     return (
                       <button
                         key={l}
-                        onClick={() => patch({ lanes: (on ? lanes.filter((x) => x !== l) : [...lanes, l]).join(",") || undefined })}
+                        onClick={() => patch({ lanes: (on ? lanes.filter((x: string) => x !== l) : [...lanes, l]).join(",") || undefined })}
                         aria-pressed={on}
                         disabled={!on && count === 0}
                         className={`tap border px-4 text-[0.62rem] tracking-[0.2em] uppercase transition-colors disabled:opacity-30 ${
