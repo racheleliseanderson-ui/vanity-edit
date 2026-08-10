@@ -475,15 +475,15 @@ function EditRoute() {
                 </div>
               </div>
 
-              <div className="mt-8 overflow-x-auto pb-2">
-                <div
-                  className="grid min-w-[720px] gap-5"
-                  style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))` }}
-                >
+              <p className="no-print mt-6 text-[0.62rem] tracking-[0.22em] uppercase text-muted-foreground md:hidden">
+                Swipe the columns sideways · changed lines are marked
+              </p>
+              <div className="-mx-5 mt-8 flex snap-x gap-5 overflow-x-auto px-5 pb-3 md:mx-0 md:px-0">
+                <div className="flex gap-5">
                   {columns.map((c) => (
                     <article
                       key={c.id}
-                      className={`stage-in flex flex-col gap-5 border p-5 ${
+                      className={`stage-in flex w-[82vw] shrink-0 snap-start flex-col gap-5 border p-5 sm:w-[300px] ${
                         c.id === "current" ? "border-champagne/60 bg-champagne/[0.04]" : "border-border"
                       }`}
                     >
@@ -522,14 +522,22 @@ function EditRoute() {
                       </div>
 
                       <dl className="grid grid-cols-3 gap-3 border-y border-border py-4 text-center">
-                        <Cell k="Objects" v={`${c.objects}/${c.ceiling}`} />
-                        <Cell k="Films" v={`${c.layers}`} />
-                        <Cell k="Min" v={`${c.minutes}`} />
+                        <Cell
+                          k="Objects"
+                          v={`${c.objects}/${c.ceiling}`}
+                          changed={!!baseline && c.id !== "current" && (c.objects !== baseline.objects || c.ceiling !== baseline.ceiling)}
+                        />
+                        <Cell k="Films" v={`${c.layers}`} changed={!!baseline && c.id !== "current" && c.layers !== baseline.layers} />
+                        <Cell k="Min" v={`${c.minutes}`} changed={!!baseline && c.id !== "current" && c.minutes !== baseline.minutes} />
                       </dl>
 
                       <div>
                         <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Leading pathway</p>
-                        <p className="mt-1 text-sm">
+                        <p
+                          className={`mt-1 text-sm ${
+                            baseline && c.id !== "current" && c.pathway !== baseline.pathway ? "text-champagne" : ""
+                          }`}
+                        >
                           {c.pathway} <span className="text-muted-foreground">· {c.pathwayFit}</span>
                         </p>
                       </div>
@@ -537,11 +545,24 @@ function EditRoute() {
                       <div>
                         <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Kit it builds</p>
                         <ul className="mt-2 space-y-1 text-sm">
-                          {c.kit.map((k) => (
-                            <li key={k.label}>
-                              {k.label} <span className="text-muted-foreground">· {k.lane}</span>
-                            </li>
-                          ))}
+                          {c.kit.map((k) => {
+                            const isNew = !!baseline && c.id !== "current" && !baseline.kit.some((b) => b.label === k.label);
+                            return (
+                              <li key={k.label} className={isNew ? "text-champagne" : ""}>
+                                {isNew ? "+ " : ""}
+                                {k.label} <span className="text-muted-foreground">· {k.lane}</span>
+                              </li>
+                            );
+                          })}
+                          {baseline &&
+                            c.id !== "current" &&
+                            baseline.kit
+                              .filter((b) => !c.kit.some((k) => k.label === b.label))
+                              .map((b) => (
+                                <li key={`dropped-${b.label}`} className="text-rouge line-through">
+                                  {b.label}
+                                </li>
+                              ))}
                         </ul>
                       </div>
 
@@ -570,6 +591,14 @@ function EditRoute() {
                           </ul>
                         )}
                         <p className="mt-3 text-xs leading-snug text-muted-foreground">{c.note}</p>
+                        {c.id !== "current" && SCENARIO_MOVES.some((m) => m.id === c.id) && (
+                          <button
+                            onClick={() => applyMove(c.id)}
+                            className="mt-4 min-h-11 w-full border border-champagne/60 px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                          >
+                            Make this my profile
+                          </button>
+                        )}
                       </div>
                     </article>
                   ))}
