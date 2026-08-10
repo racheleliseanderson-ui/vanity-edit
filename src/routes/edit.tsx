@@ -450,7 +450,24 @@ function EditRoute() {
               </button>
             ))}
           </div>
-          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`}>
+          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`} {...swipe}>
+          <div className="no-print mb-6 flex items-center justify-between gap-3 md:hidden">
+            <button
+              onClick={() => setStage(STAGES[Math.max(0, stageIndex - 1)]!)}
+              disabled={stageIndex === 0}
+              className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
+            >
+              ← {t("stage.prev")}
+            </button>
+            <span className="text-[0.56rem] tracking-[0.22em] uppercase text-muted-foreground">swipe</span>
+            <button
+              onClick={() => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]!)}
+              disabled={stageIndex === STAGES.length - 1}
+              className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
+            >
+              {t("stage.next")} →
+            </button>
+          </div>
           <p className="sr-only" aria-live="polite">
             {stage} · pancake risk {edit.architecture.risk} of 100 · {edit.kit.items.length} objects · {edit.kit.layers} films
           </p>
