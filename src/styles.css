@@ -370,3 +370,172 @@
     display: none !important;
   }
 }
+
+/* ── High-contrast black. True black ground, maximum ink separation. ── */
+.hc-black {
+  --ink: oklch(0 0 0);
+  --background: oklch(0 0 0);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.13 0 0);
+  --card-foreground: oklch(1 0 0);
+  --popover: oklch(0.09 0 0);
+  --popover-foreground: oklch(1 0 0);
+
+  --oxblood: oklch(0.52 0.16 12);
+  --rouge: oklch(0.78 0.17 26);
+  --primary: oklch(1 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.2 0 0);
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.86 0.01 80);
+  --champagne: oklch(0.93 0.11 92);
+  --accent: oklch(0.93 0.11 92);
+  --accent-foreground: oklch(0 0 0);
+  --blush: oklch(0.9 0.06 18);
+  --porcelain: oklch(1 0 0);
+  --porcelain-foreground: oklch(0 0 0);
+
+  --destructive: oklch(0.72 0.2 24);
+  --destructive-foreground: oklch(0 0 0);
+  --hairline: oklch(1 0 0 / 46%);
+  --border: oklch(1 0 0 / 46%);
+  --input: oklch(1 0 0 / 62%);
+  --ring: oklch(0.93 0.11 92);
+
+  --gradient-spectrum: linear-gradient(90deg, oklch(0.86 0.16 158) 0%, oklch(0.93 0.11 92) 45%, oklch(0.8 0.17 48) 74%, oklch(0.72 0.2 24) 100%);
+  --gradient-veil: linear-gradient(180deg, oklch(0 0 0 / 0%) 0%, oklch(0 0 0 / 82%) 55%, oklch(0 0 0) 100%);
+  --gradient-champagne: linear-gradient(100deg, oklch(1 0.04 96), oklch(0.93 0.11 92) 55%, oklch(0.82 0.13 74));
+  --shadow-lux: 0 0 0 1px oklch(1 0 0 / 30%);
+  --shadow-glow: 0 0 0 2px oklch(0.93 0.11 92 / 60%);
+
+  --tone-good: oklch(0.86 0.16 158);
+  --tone-fair: oklch(0.93 0.11 92);
+  --tone-warn: oklch(0.83 0.17 62);
+  --tone-bad: oklch(0.75 0.2 24);
+  --track: oklch(1 0 0 / 26%);
+  --panel-a: oklch(1 0 0 / 8%);
+  --panel-b: oklch(1 0 0 / 3%);
+  --veil-strong: oklch(0 0 0 / 94%);
+  --marker-ring: oklch(0 0 0);
+  --marker-glow: 0 0 0 2px oklch(1 0 0);
+}
+
+/* ── High-contrast white. Pure ground, near-black ink, structure carried by rules. ── */
+.hc-white {
+  --ink: oklch(0.1 0 0);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.1 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.1 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+
+  --oxblood: oklch(0.34 0.15 14);
+  --rouge: oklch(0.4 0.19 22);
+  --primary: oklch(0.1 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.93 0 0);
+  --secondary-foreground: oklch(0.1 0 0);
+  --muted: oklch(0.94 0 0);
+  --muted-foreground: oklch(0.34 0.01 60);
+  --champagne: oklch(0.42 0.11 68);
+  --accent: oklch(0.42 0.11 68);
+  --accent-foreground: oklch(1 0 0);
+  --blush: oklch(0.74 0.09 18);
+  --porcelain: oklch(1 0 0);
+  --porcelain-foreground: oklch(0.1 0 0);
+
+  --destructive: oklch(0.42 0.2 24);
+  --destructive-foreground: oklch(1 0 0);
+  --hairline: oklch(0.1 0 0 / 42%);
+  --border: oklch(0.1 0 0 / 42%);
+  --input: oklch(0.1 0 0 / 60%);
+  --ring: oklch(0.42 0.11 68);
+
+  --gradient-spectrum: linear-gradient(90deg, oklch(0.42 0.13 158) 0%, oklch(0.48 0.11 84) 45%, oklch(0.5 0.17 46) 74%, oklch(0.42 0.2 24) 100%);
+  --gradient-veil: linear-gradient(180deg, oklch(1 0 0 / 0%) 0%, oklch(1 0 0 / 84%) 55%, oklch(1 0 0) 100%);
+  --gradient-champagne: linear-gradient(100deg, oklch(0.48 0.11 78), oklch(0.4 0.13 52) 55%, oklch(0.3 0.14 20));
+  --shadow-lux: 0 0 0 1px oklch(0.1 0 0 / 28%);
+  --shadow-glow: 0 0 0 2px oklch(0.42 0.11 68 / 55%);
+
+  --tone-good: oklch(0.42 0.13 158);
+  --tone-fair: oklch(0.46 0.11 80);
+  --tone-warn: oklch(0.48 0.17 48);
+  --tone-bad: oklch(0.42 0.2 24);
+  --track: oklch(0.1 0 0 / 22%);
+  --panel-a: oklch(1 0 0);
+  --panel-b: oklch(0.97 0 0);
+  --veil-strong: oklch(1 0 0 / 95%);
+  --marker-ring: oklch(1 0 0);
+  --marker-glow: 0 0 0 2px oklch(0.1 0 0);
+}
+
+/* ── Colour-blind-safe layer. Blue / orange / violet instead of green / red,
+   over whatever theme is active. Meaning is never carried by colour alone. ── */
+.cb-safe {
+  --tone-good: oklch(0.62 0.15 245);
+  --tone-fair: oklch(0.74 0.13 88);
+  --tone-warn: oklch(0.68 0.16 62);
+  --tone-bad: oklch(0.52 0.19 318);
+  --rouge: oklch(0.58 0.2 318);
+  --chart-1: oklch(0.62 0.15 245);
+  --chart-2: oklch(0.68 0.16 62);
+  --chart-3: oklch(0.52 0.19 318);
+  --chart-4: oklch(0.74 0.13 88);
+  --chart-5: oklch(0.4 0.05 250);
+  --gradient-spectrum: linear-gradient(
+    90deg,
+    oklch(0.62 0.15 245) 0%,
+    oklch(0.74 0.13 88) 44%,
+    oklch(0.68 0.16 62) 72%,
+    oklch(0.52 0.19 318) 100%
+  );
+}
+
+.cb-safe.light {
+  --tone-good: oklch(0.46 0.16 250);
+  --tone-fair: oklch(0.52 0.12 84);
+  --tone-warn: oklch(0.54 0.16 56);
+  --tone-bad: oklch(0.42 0.2 316);
+  --rouge: oklch(0.42 0.2 316);
+}
+
+/* Shape and text cues, so a diff never depends on hue. */
+.cb-safe [data-diff="added"]::before {
+  content: "▲ ";
+}
+.cb-safe [data-diff="dropped"]::before {
+  content: "▼ ";
+}
+.cb-safe [data-diff="changed"]::after {
+  content: " ✳";
+}
+.cb-safe [data-tone="good"]::after {
+  content: " ↓";
+}
+.cb-safe [data-tone="bad"]::after {
+  content: " ↑";
+}
+
+/* Opt-in reduced motion, independent of the OS setting. */
+.calm-motion *,
+.calm-motion *::before,
+.calm-motion *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Larger base type for low-vision reading. */
+.big-type {
+  font-size: 118%;
+}
+
+/* Every interactive surface clears a comfortable thumb. */
+@utility tap {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  touch-action: manipulation;
+  user-select: none;
+}
