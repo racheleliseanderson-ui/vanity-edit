@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
+import { ThemeToggle } from "@/lib/mi/theme";
+
 const NAV = [
   { to: "/", label: "Salon" },
   { to: "/edit", label: "The Edit" },
@@ -16,18 +18,21 @@ export function Header() {
           <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
           <span className="display mt-1 block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
         </Link>
-        <nav className="flex items-center gap-1 md:gap-2">
-          {NAV.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              activeOptions={{ exact: n.to === "/" }}
-              className="rounded-full px-3 py-2 text-[0.78rem] tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-champagne"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center gap-2 md:gap-4">
+          <nav className="flex items-center gap-1 md:gap-2">
+            {NAV.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                activeOptions={{ exact: n.to === "/" }}
+                className="rounded-full px-2 py-2 text-[0.7rem] tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-champagne md:px-3 md:text-[0.78rem]"
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
