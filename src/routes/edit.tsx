@@ -901,11 +901,14 @@ function Stat({ k, v }: { k: string; v: string }) {
   return <StatInner k={k} v={v} />;
 }
 
-function Cell({ k, v }: { k: string; v: string }) {
+function Cell({ k, v, changed }: { k: string; v: string; changed?: boolean }) {
   return (
     <div>
       <dt className="text-[0.55rem] tracking-[0.22em] uppercase text-muted-foreground">{k}</dt>
-      <dd className="display mt-1 text-xl tabular-nums">{v}</dd>
+      <dd className={`display mt-1 text-xl tabular-nums ${changed ? "text-champagne" : ""}`}>
+        {v}
+        {changed && <span className="sr-only"> (changed from baseline)</span>}
+      </dd>
     </div>
   );
 }
