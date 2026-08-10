@@ -10,7 +10,9 @@ import {
   PRESETS,
   TYPE_MAP,
 } from "@/lib/mi/catalog";
-import { runEdit } from "@/lib/mi/engine";
+import { availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { downloadFullPacket } from "@/lib/mi/full-packet";
+import { PRODUCTS } from "@/lib/mi/products";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
@@ -31,7 +33,7 @@ export const Route = createFileRoute("/edit")({
   component: EditRoute,
 });
 
-const STAGES = ["Match", "Alternatives", "Tools", "Bag", "Kit", "Packet"] as const;
+const STAGES = ["Match", "Compare", "Alternatives", "Tools", "Bag", "Kit", "Packet"] as const;
 type Stage = (typeof STAGES)[number];
 
 const SKINS: SkinType[] = ["dry", "normal", "combination", "oily"];
@@ -56,6 +58,10 @@ function EditRoute() {
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
+  const [moves, setMoves] = useState<string[]>(["coverage-down", "maint-up"]);
+  const offers = useMemo(() => availableMoves(profile), [profile]);
+  const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
+  const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
 
   return (
     <Page>
