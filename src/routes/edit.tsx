@@ -602,12 +602,26 @@ function EditRoute() {
 
           {stage === "Packet" && (
             <Section title="The edit packet" lead="Print or save as PDF. Yours to take to the counter.">
-              <button
-                onClick={() => window.print()}
-                className="no-print mb-10 inline-flex border border-champagne/50 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
-              >
-                Export the packet
-              </button>
+              <div className="no-print mb-10 flex flex-wrap gap-3">
+                <button
+                  onClick={() => downloadFullPacket(edit, profile, columns)}
+                  className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
+                >
+                  Export the full packet
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Print this summary
+                </button>
+              </div>
+              <p className="no-print mb-10 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                The full packet is a single self-contained file: your inputs, the architecture ledger, every scored
+                product type, all nine pathways, tools, bag calls, coaching, the costed single moves and the{" "}
+                {columns.length} scenario{columns.length === 1 ? "" : "s"} you have lined up — with named formulas and
+                prices beside each kit object. Open it anywhere, or print it to PDF.
+              </p>
               <div className="panel space-y-10 p-8 md:p-12">
                 <header className="border-b border-border pb-6">
                   <p className="eyebrow">Vanity or Vice · Makeup Intelligence</p>
@@ -629,14 +643,36 @@ function EditRoute() {
                 <div>
                   <p className="eyebrow">The kit</p>
                   <ul className="mt-4 space-y-3">
-                    {edit.kit.items.map((it) => (
-                      <li key={it.id} className="border-b border-border pb-3">
-                        <span className="display text-xl">{it.label}</span>
-                        <span className="block text-sm text-muted-foreground">{it.job} · e.g. {it.example}</span>
-                      </li>
-                    ))}
+                    {edit.kit.items.map((it) => {
+                      const named = PRODUCTS.filter((p) => p.typeId === it.id).slice(0, 3);
+                      return (
+                        <li key={it.id} className="border-b border-border pb-3">
+                          <span className="display text-xl">{it.label}</span>
+                          <span className="block text-sm text-muted-foreground">{it.job}</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {named.length
+                              ? named.map((p) => `${p.brand} ${p.name} ($${p.price})`).join(" · ")
+                              : `e.g. ${it.example}`}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
+                {columns.length > 1 && (
+                  <div>
+                    <p className="eyebrow">Scenarios you compared</p>
+                    <ul className="mt-4 space-y-2 text-sm">
+                      {columns.slice(1).map((c) => (
+                        <li key={c.id} className="border-b border-border pb-2 text-muted-foreground">
+                          <span className="text-foreground">{c.label} ({c.move})</span> · risk {c.risk} (
+                          {c.delta > 0 ? `+${c.delta}` : c.delta}) · {c.objects} objects · {c.layers} films · tension{" "}
+                          {c.tension} · {c.pathway}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="grid gap-8 sm:grid-cols-2">
                   <div>
                     <p className="eyebrow">Essential tools</p>
