@@ -158,6 +158,7 @@ export interface ProductQuery {
   band?: string | undefined;
   filters?: FilterKey[] | undefined;
   maxLayer?: number | undefined;
+  typeId?: string | undefined;
 }
 
 export function searchProducts(query: ProductQuery): DeskProduct[] {
@@ -175,6 +176,93 @@ export function searchProducts(query: ProductQuery): DeskProduct[] {
     }
     if (query.filters?.length && !query.filters.every((f) => p.filters.includes(f))) return false;
     if (query.maxLayer !== undefined && (t?.layerWeight ?? 0) > query.maxLayer) return false;
+    if (query.typeId && p.typeId !== query.typeId) return false;
     return true;
   });
+}
+
+/* ─────────── Relevance ranking ─────────── */
+
+export type SortKey = "relevance" | "thinnest" | "price-asc" | "price-desc" | "brand";
+
+export const SORTS: { id: SortKey; label: string }[] = [
+  { id: "relevance", label: "Relevance" },
+  { id: "thinnest", label: "Thinnest film first" },
+  { id: "price-asc", label: "Price low to high" },
+  { id: "price-desc", label: "Price high to low" },
+  { id: "brand", label: "House A–Z" },
+];
+
+export interface RankedProduct {
+  product: DeskProduct;
+  relevance: number;
+  /** which field the query matched, for a legible "why this surfaced" line */
+  matchedOn: string[];
+}
+
+function relevanceOf(p: DeskProduct, terms: string[]): { score: number; matchedOn: string[] } {
+  const t = TYPE_MAP[p.typeId];
+  const fields: [string, string, number][] = [
+    ["name", p.name.toLowerCase(), 40],
+    ["house", p.brand.toLowerCase(), 30],
+    ["type", (t?.label ?? "").toLowerCase(), 24],
+    ["lane", (t?.lane ?? "").toLowerCase(), 14],
+    ["job", (t?.job ?? "").toLowerCase(), 10],
+    ["note", p.note.toLowerCase(), 8],
+  ];
+  let score = 0;
+  const matchedOn = new Set<string>();
+  for (const term of terms) {
+    for (const [key, value, weight] of fields) {
+      if (!value.includes(term)) continue;
+      const boundary = value === term ? 1.6 : value.startsWith(term) ? 1.3 : 1;
+      score += weight * boundary;
+      matchedOn.add(key);
+      break;
+    }
+  }
+  // a thinner film is a better answer to the same question
+  score += (3 - (t?.layerWeight ?? 0)) * 3;
+  return { score: Math.round(score), matchedOn: [...matchedOn] };
+}
+
+export function rankProducts(query: ProductQuery, sort: SortKey = "relevance"): RankedProduct[] {
+  const terms = (query.q ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const ranked = searchProducts(query).map((product) => {
+    const { score, matchedOn } = relevanceOf(product, terms);
+    return { product, relevance: score, matchedOn };
+  });
+  const layer = (p: DeskProduct) => TYPE_MAP[p.typeId]?.layerWeight ?? 0;
+  ranked.sort((a, b) => {
+    switch (sort) {
+      case "thinnest":
+        return layer(a.product) - layer(b.product) || b.relevance - a.relevance;
+      case "price-asc":
+        return a.product.price - b.product.price;
+      case "price-desc":
+        return b.product.price - a.product.price;
+      case "brand":
+        return a.product.brand.localeCompare(b.product.brand) || a.product.name.localeCompare(b.product.name);
+      default:
+        return b.relevance - a.relevance || a.product.price - b.product.price;
+    }
+  });
+  return ranked;
+}
+
+/** Which single filter, if loosened, would return the most results. */
+export function loosenSuggestion(query: ProductQuery): { field: string; label: string; count: number } | null {
+  const trials: { field: string; label: string; next: ProductQuery }[] = [
+    ...(query.q ? [{ field: "q", label: "clear the search words", next: { ...query, q: "" } }] : []),
+    ...(query.lane ? [{ field: "lane", label: `drop the ${query.lane} lane`, next: { ...query, lane: undefined } }] : []),
+    ...(query.brand ? [{ field: "brand", label: `open it past ${query.brand}`, next: { ...query, brand: undefined } }] : []),
+    ...(query.band ? [{ field: "band", label: "widen the price band", next: { ...query, band: undefined } }] : []),
+    ...(query.filters?.length ? [{ field: "filters", label: "release the preference filters", next: { ...query, filters: [] } }] : []),
+    ...(query.maxLayer !== undefined ? [{ field: "maxLayer", label: "allow thicker films", next: { ...query, maxLayer: undefined } }] : []),
+    ...(query.typeId ? [{ field: "typeId", label: "look past that one product type", next: { ...query, typeId: undefined } }] : []),
+  ];
+  const scored = trials
+    .map((t) => ({ field: t.field, label: t.label, count: searchProducts(t.next).length }))
+    .sort((a, b) => b.count - a.count);
+  return scored[0] ?? null;
 }

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Page } from "@/components/mi/chrome";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
@@ -10,14 +10,22 @@ import {
   PRESETS,
   TYPE_MAP,
 } from "@/lib/mi/catalog";
-import { availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { PRODUCTS } from "@/lib/mi/products";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
-  validateSearch: (s: Record<string, unknown>): { path?: string } =>
-    typeof s["path"] === "string" ? { path: s["path"] as string } : {},
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { path?: string | undefined; stage?: string | undefined; bag?: string | undefined; moves?: string | undefined } => {
+    const out: { path?: string; stage?: string; bag?: string; moves?: string } = {};
+    for (const k of ["path", "stage", "bag", "moves"] as const) {
+      const v = s[k];
+      if (typeof v === "string" && v) out[k] = v;
+    }
+    return out;
+  },
   head: () => ({
     meta: [
       { title: "The Edit · Makeup Intelligence" },
@@ -46,22 +54,72 @@ function toggle<T>(arr: T[], v: T) {
 }
 
 function EditRoute() {
-  const { path } = Route.useSearch();
+  const search = Route.useSearch();
+  const { path } = search;
+  const navigate = useNavigate({ from: Route.fullPath });
+  const incomingBag = useMemo(
+    () => (search.bag ? search.bag.split(",").filter((id: string) => TYPE_MAP[id]) : []),
+    [search.bag],
+  );
   const [profile, setProfile] = useState<Profile>(() => {
     const preset = PRESETS.find((p) => p.id === path);
-    return { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    const base: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    return incomingBag.length ? { ...base, bag: [...new Set([...base.bag, ...incomingBag])] } : base;
   });
-  const [stage, setStage] = useState<Stage>("Match");
+  const [stage, setStageState] = useState<Stage>(() =>
+    STAGES.includes(search.stage as Stage) ? (search.stage as Stage) : "Match",
+  );
+  const [panelOpen, setPanelOpen] = useState(false);
+  const setStage = (s: Stage) => {
+    setStageState(s);
+    void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, stage: s === "Match" ? undefined : s }), replace: true });
+  };
   const [activePreset, setActivePreset] = useState<string | undefined>(path);
 
   const edit = useMemo(() => runEdit(profile), [profile]);
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
-  const [moves, setMoves] = useState<string[]>(["coverage-down", "maint-up"]);
+  const [moves, setMovesState] = useState<string[]>(() =>
+    search.moves ? search.moves.split(",").filter((m: string) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
+  );
+  const setMoves = (next: string[] | ((prev: string[]) => string[])) =>
+    setMovesState((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      void navigate({
+        search: (s: Record<string, unknown>) => ({ ...s, moves: value.length ? value.join(",") : undefined }),
+        replace: true,
+      });
+      return value;
+    });
   const offers = useMemo(() => availableMoves(profile), [profile]);
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
   const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
+  const baseline = columns[0];
+
+  /** Apply one costed move straight into the live profile. */
+  const applyMove = (id: string) => {
+    const def = SCENARIO_MOVES.find((m) => m.id === id);
+    if (!def) return;
+    setProfile((p) => def.move(p));
+    setActivePreset(undefined);
+  };
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onTabKey = (e: React.KeyboardEvent, i: number) => {
+    const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
+    if (!dir) return;
+    e.preventDefault();
+    const next = dir === -99 ? 0 : dir === 99 ? STAGES.length - 1 : (i + dir + STAGES.length) % STAGES.length;
+    setStage(STAGES[next]!);
+    tabRefs.current[next]?.focus();
+  };
+
+  useEffect(() => {
+    if (panelOpen) setPanelOpen(false);
+    // close the mobile drawer whenever the stage changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
 
   return (
     <Page>
@@ -109,8 +167,26 @@ function EditRoute() {
       </section>
 
       <div className="mx-auto grid max-w-[1400px] gap-12 px-5 py-14 md:px-10 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        {/* Instrument panel */}
-        <aside className="no-print space-y-10 lg:sticky lg:top-[110px] lg:max-h-[calc(100vh-140px)] lg:self-start lg:overflow-y-auto lg:pr-4">
+        {/* Instrument panel — a drawer on small screens, a sticky rail from lg up */}
+        <div className="no-print lg:hidden">
+          <button
+            onClick={() => setPanelOpen((o) => !o)}
+            aria-expanded={panelOpen}
+            aria-controls="instrument-panel"
+            className="flex min-h-11 w-full items-center justify-between border border-champagne/50 bg-champagne/5 px-5 py-3 text-left"
+          >
+            <span className="text-[0.66rem] tracking-[0.24em] uppercase text-champagne">
+              {panelOpen ? "Close the instrument" : "Adjust the instrument"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {profile.goals.length} goals · {profile.skin} · {profile.coverage}/100 · {profile.ceiling} objects
+            </span>
+          </button>
+        </div>
+        <aside
+          id="instrument-panel"
+          className={`no-print space-y-10 ${panelOpen ? "" : "hidden"} lg:block lg:sticky lg:top-[110px] lg:max-h-[calc(100vh-140px)] lg:self-start lg:space-y-10 lg:overflow-y-auto lg:pr-4`}
+        >
           <Group title="Goals" note="Pick as many as are true.">
             <div className="grid gap-2">
               {GOALS.map((g) => (
@@ -217,20 +293,39 @@ function EditRoute() {
 
         {/* Output */}
         <div>
-          <nav className="no-print sticky top-[86px] z-20 -mx-5 mb-10 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl md:mx-0 md:px-0">
+          <div
+            role="tablist"
+            aria-label="Stages of the edit"
+            className="no-print sticky top-[86px] z-20 -mx-5 mb-10 flex snap-x gap-1 overflow-x-auto border-b border-border bg-background/90 px-5 py-2 backdrop-blur-xl md:mx-0 md:px-0"
+          >
             {STAGES.map((s, i) => (
               <button
                 key={s}
+                role="tab"
+                id={`stage-tab-${s}`}
+                aria-selected={stage === s}
+                aria-controls="stage-panel"
+                tabIndex={stage === s ? 0 : -1}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                onKeyDown={(e) => onTabKey(e, i)}
                 onClick={() => setStage(s)}
-                className={`flex items-baseline gap-2 whitespace-nowrap px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
-                  stage === s ? "text-champagne" : "text-muted-foreground hover:text-foreground"
+                className={`flex min-h-11 snap-start items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
+                  stage === s
+                    ? "border-champagne text-champagne"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <span className="opacity-50">{String(i + 1).padStart(2, "0")}</span>
                 {s}
               </button>
             ))}
-          </nav>
+          </div>
+          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`}>
+          <p className="sr-only" aria-live="polite">
+            {stage} · pancake risk {edit.architecture.risk} of 100 · {edit.kit.items.length} objects · {edit.kit.layers} films
+          </p>
 
           {stage === "Match" && (
             <Section title="Makeup Match" lead="Product types scored against your profile. Layer weight is penalised, not celebrated.">
@@ -257,6 +352,27 @@ function EditRoute() {
                         {w.move} · risk {w.risk} · {w.kitSize} objects
                       </p>
                       <p className="mt-2 text-xs leading-snug text-muted-foreground">{w.note}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {SCENARIO_MOVES.some((m) => m.id === w.id) && (
+                          <>
+                            <button
+                              onClick={() => applyMove(w.id)}
+                              className="min-h-11 border border-champagne/60 px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                            >
+                              Apply this move
+                            </button>
+                            <button
+                              onClick={() => {
+                                setMoves((prev) => (prev.includes(w.id) ? prev : [...prev, w.id].slice(-4)));
+                                setStage("Compare");
+                              }}
+                              className="min-h-11 border border-border px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+                            >
+                              Compare it
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -359,15 +475,15 @@ function EditRoute() {
                 </div>
               </div>
 
-              <div className="mt-8 overflow-x-auto pb-2">
-                <div
-                  className="grid min-w-[720px] gap-5"
-                  style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(220px, 1fr))` }}
-                >
+              <p className="no-print mt-6 text-[0.62rem] tracking-[0.22em] uppercase text-muted-foreground md:hidden">
+                Swipe the columns sideways · changed lines are marked
+              </p>
+              <div className="-mx-5 mt-8 flex snap-x gap-5 overflow-x-auto px-5 pb-3 md:mx-0 md:px-0">
+                <div className="flex gap-5">
                   {columns.map((c) => (
                     <article
                       key={c.id}
-                      className={`stage-in flex flex-col gap-5 border p-5 ${
+                      className={`stage-in flex w-[82vw] shrink-0 snap-start flex-col gap-5 border p-5 sm:w-[300px] ${
                         c.id === "current" ? "border-champagne/60 bg-champagne/[0.04]" : "border-border"
                       }`}
                     >
@@ -406,14 +522,22 @@ function EditRoute() {
                       </div>
 
                       <dl className="grid grid-cols-3 gap-3 border-y border-border py-4 text-center">
-                        <Cell k="Objects" v={`${c.objects}/${c.ceiling}`} />
-                        <Cell k="Films" v={`${c.layers}`} />
-                        <Cell k="Min" v={`${c.minutes}`} />
+                        <Cell
+                          k="Objects"
+                          v={`${c.objects}/${c.ceiling}`}
+                          changed={!!baseline && c.id !== "current" && (c.objects !== baseline.objects || c.ceiling !== baseline.ceiling)}
+                        />
+                        <Cell k="Films" v={`${c.layers}`} changed={!!baseline && c.id !== "current" && c.layers !== baseline.layers} />
+                        <Cell k="Min" v={`${c.minutes}`} changed={!!baseline && c.id !== "current" && c.minutes !== baseline.minutes} />
                       </dl>
 
                       <div>
                         <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Leading pathway</p>
-                        <p className="mt-1 text-sm">
+                        <p
+                          className={`mt-1 text-sm ${
+                            baseline && c.id !== "current" && c.pathway !== baseline.pathway ? "text-champagne" : ""
+                          }`}
+                        >
                           {c.pathway} <span className="text-muted-foreground">· {c.pathwayFit}</span>
                         </p>
                       </div>
@@ -421,11 +545,24 @@ function EditRoute() {
                       <div>
                         <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Kit it builds</p>
                         <ul className="mt-2 space-y-1 text-sm">
-                          {c.kit.map((k) => (
-                            <li key={k.label}>
-                              {k.label} <span className="text-muted-foreground">· {k.lane}</span>
-                            </li>
-                          ))}
+                          {c.kit.map((k) => {
+                            const isNew = !!baseline && c.id !== "current" && !baseline.kit.some((b) => b.label === k.label);
+                            return (
+                              <li key={k.label} className={isNew ? "text-champagne" : ""}>
+                                {isNew ? "+ " : ""}
+                                {k.label} <span className="text-muted-foreground">· {k.lane}</span>
+                              </li>
+                            );
+                          })}
+                          {baseline &&
+                            c.id !== "current" &&
+                            baseline.kit
+                              .filter((b) => !c.kit.some((k) => k.label === b.label))
+                              .map((b) => (
+                                <li key={`dropped-${b.label}`} className="text-rouge line-through">
+                                  {b.label}
+                                </li>
+                              ))}
                         </ul>
                       </div>
 
@@ -454,6 +591,14 @@ function EditRoute() {
                           </ul>
                         )}
                         <p className="mt-3 text-xs leading-snug text-muted-foreground">{c.note}</p>
+                        {c.id !== "current" && SCENARIO_MOVES.some((m) => m.id === c.id) && (
+                          <button
+                            onClick={() => applyMove(c.id)}
+                            className="mt-4 min-h-11 w-full border border-champagne/60 px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                          >
+                            Make this my profile
+                          </button>
+                        )}
                       </div>
                     </article>
                   ))}
@@ -723,6 +868,7 @@ function EditRoute() {
               </div>
             </Section>
           )}
+          </div>
         </div>
       </div>
     </Page>
@@ -755,11 +901,14 @@ function Stat({ k, v }: { k: string; v: string }) {
   return <StatInner k={k} v={v} />;
 }
 
-function Cell({ k, v }: { k: string; v: string }) {
+function Cell({ k, v, changed }: { k: string; v: string; changed?: boolean }) {
   return (
     <div>
       <dt className="text-[0.55rem] tracking-[0.22em] uppercase text-muted-foreground">{k}</dt>
-      <dd className="display mt-1 text-xl tabular-nums">{v}</dd>
+      <dd className={`display mt-1 text-xl tabular-nums ${changed ? "text-champagne" : ""}`}>
+        {v}
+        {changed && <span className="sr-only"> (changed from baseline)</span>}
+      </dd>
     </div>
   );
 }
