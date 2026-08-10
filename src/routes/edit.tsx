@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Page } from "@/components/mi/chrome";
+import { Carousel, ConfirmButton, Sheet, useSwipe } from "@/components/mi/touch";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
   CONCERNS,
@@ -13,9 +14,21 @@ import {
 import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
 import { downloadComparePacket } from "@/lib/mi/compare-packet";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
+import { useI18n } from "@/lib/mi/i18n";
+import { matchKit } from "@/lib/mi/match";
 import { PRODUCTS } from "@/lib/mi/products";
-import { loadScenarioSets, removeScenarioSet, saveScenarioSet, type ScenarioSet } from "@/lib/mi/scenario-sets";
-import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
+import {
+  duplicateScenarioSet,
+  importScenarioSet,
+  loadScenarioSets,
+  markScenarioSetUsed,
+  removeScenarioSet,
+  renameScenarioSet,
+  reorderScenarioSet,
+  saveScenarioSet,
+  type ScenarioSet,
+} from "@/lib/mi/scenario-sets";
+import type { Budget, Climate, FilterKey, Profile, SkinType, Undertone } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
   validateSearch: (
@@ -49,6 +62,7 @@ type Stage = (typeof STAGES)[number];
 const SKINS: SkinType[] = ["dry", "normal", "combination", "oily"];
 const CLIMATES: Climate[] = ["humid", "temperate", "dry", "altitude"];
 const BUDGETS: Budget[] = ["lean", "mid", "open"];
+const UNDERTONES: Undertone[] = ["cool", "neutral", "warm"];
 const LEVEL = ["None", "Some", "A lot", "Constantly"];
 
 function toggle<T>(arr: T[], v: T) {
@@ -103,6 +117,8 @@ function EditRoute() {
   const [sets, setSets] = useState<ScenarioSet[]>([]);
   const [setName, setSetName] = useState("");
   const [loadedSet, setLoadedSet] = useState<string | undefined>(undefined);
+  const [importLink, setImportLink] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
   useEffect(() => setSets(loadScenarioSets()), []);
 
   const moveDefs = useMemo(
@@ -124,6 +140,33 @@ function EditRoute() {
   };
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { t: tr } = useI18n();
+  const stageIndex = STAGES.indexOf(stage);
+  const swipe = useSwipe(
+    () => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]!),
+    () => setStage(STAGES[Math.max(0, stageIndex - 1)]!),
+  );
+  /** Every smart path costed before you commit to it. */
+  const pathCards = useMemo(
+    () =>
+      PRESETS.map((p) => {
+        const preview = runEdit({ ...DEFAULT_PROFILE, ...p.profile });
+        return {
+          preset: p,
+          risk: preview.architecture.risk,
+          objects: preview.kit.items.length,
+          minutes: preview.kit.minutes,
+          skinlike: preview.architecture.skinlike,
+        };
+      }),
+    [],
+  );
+  const [previousProfile, setPreviousProfile] = useState<Profile | null>(null);
+  const addToBag = (ids: string[]) =>
+    setProfile((p) => ({ ...p, bag: [...new Set([...p.bag, ...ids.filter((id) => TYPE_MAP[id])])] }));
+  const matched = useMemo(() => matchKit(profile, edit.kit.items), [profile, edit.kit.items]);
+  const [pathA, setPathA] = useState<string | null>(null);
+  const [pathB, setPathB] = useState<string | null>(null);
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
     if (!dir) return;
@@ -150,24 +193,10 @@ function EditRoute() {
               <h1 className="display mt-3 text-4xl md:text-6xl">
                 Your <span className="gilt-text italic">personal edit</span>
               </h1>
-              <div className="mt-6 flex flex-wrap gap-2 no-print">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setActivePreset(p.id);
-                      setProfile({ ...DEFAULT_PROFILE, ...p.profile });
-                    }}
-                    className={`border px-4 py-2 text-[0.66rem] tracking-[0.2em] uppercase transition-colors ${
-                      activePreset === p.id
-                        ? "border-champagne bg-champagne/10 text-champagne"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
+              <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                Start from a smart path — each one is already costed for pancake risk, objects and minutes — then revise
+                every field underneath it.
+              </p>
             </div>
             <div className="panel p-7">
               <RiskDial arch={edit.architecture} />
@@ -180,6 +209,73 @@ function EditRoute() {
                 <Stat k="Tension" v={`${edit.kit.tension}`} />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Smart paths — desirable, costed, reversible */}
+      <section className="no-print border-b border-border">
+        <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">{tr("edit.smartPaths")}</p>
+              <h2 className="display mt-2 text-3xl md:text-4xl">
+                Nine ways in, <span className="gilt-text italic">each one honest about the trade</span>
+              </h2>
+            </div>
+            {previousProfile && (
+              <button
+                onClick={() => {
+                  setProfile(previousProfile);
+                  setPreviousProfile(null);
+                  setActivePreset(undefined);
+                }}
+                className="tap border border-border px-5 text-[0.62rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground"
+              >
+                {tr("edit.undoPath")}
+              </button>
+            )}
+          </div>
+          <div className="mt-8">
+            <Carousel count={pathCards.length} label="Smart paths">
+              {pathCards.map(({ preset: p, risk, objects, minutes, skinlike }) => {
+                const on = activePreset === p.id;
+                return (
+                  <article
+                    key={p.id}
+                    className={`flex w-[80vw] shrink-0 snap-start flex-col gap-4 border p-6 transition-colors sm:w-[320px] ${
+                      on ? "border-champagne bg-champagne/[0.06]" : "border-border hover:border-champagne/50"
+                    }`}
+                  >
+                    <div>
+                      <p className="eyebrow">{p.line}</p>
+                      <h3 className="display mt-2 text-2xl leading-tight">{p.name}</h3>
+                      <p className="mt-2 text-sm italic text-muted-foreground">{p.feeling ?? p.promise}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <Meter value={risk} label="Projected pancake risk" right={`${risk}`} tone={risk > 50 ? "oxblood" : "champagne"} />
+                      <Meter value={skinlike} label="Skin-like" right={`${skinlike}`} />
+                    </div>
+                    <p className="text-[0.6rem] tracking-[0.22em] uppercase text-muted-foreground">
+                      {objects} objects · {minutes} min
+                    </p>
+                    {p.trade && <p className="text-xs leading-relaxed text-rouge/90">{p.trade}</p>}
+                    <button
+                      onClick={() => {
+                        setPreviousProfile(profile);
+                        setActivePreset(p.id);
+                        setProfile({ ...DEFAULT_PROFILE, ...p.profile });
+                      }}
+                      className={`tap mt-auto w-full border px-4 text-[0.6rem] tracking-[0.24em] uppercase transition-colors ${
+                        on ? "border-champagne bg-champagne/15 text-champagne" : "border-champagne/50 text-champagne hover:bg-champagne/10"
+                      }`}
+                    >
+                      {on ? "This path is live" : tr("edit.applyPath")}
+                    </button>
+                  </article>
+                );
+              })}
+            </Carousel>
           </div>
         </div>
       </section>
@@ -289,7 +385,26 @@ function EditRoute() {
             </div>
           </Group>
 
+          <Group title={tr("edit.shade")} note="Used for shade families only — never an exact match promise.">
+            <div className="grid grid-cols-3 gap-2">
+              {UNDERTONES.map((u) => (
+                <Chip key={u} active={profile.undertone === u} onClick={() => set({ undertone: u })}>
+                  <span className="capitalize">{u}</span>
+                </Chip>
+              ))}
+            </div>
+            <Slider
+              label="Depth"
+              hint={["porcelain", "fair", "light", "light-medium", "medium", "medium-tan", "tan", "deep-tan", "deep", "rich deep"][profile.depth - 1] ?? "medium"}
+              min={1}
+              max={10}
+              value={profile.depth}
+              onChange={(n) => set({ depth: n })}
+            />
+          </Group>
+
           <Group title="What is in the bag now" note="Used for the bag edit — nothing gets thrown away.">
+            <p className="sr-only">Toggle the product types you already own.</p>
             <div className="grid gap-2">
               {Object.values(TYPE_MAP)
                 .filter((t) => t.lane !== "care")
@@ -340,7 +455,24 @@ function EditRoute() {
               </button>
             ))}
           </div>
-          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`}>
+          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`} {...swipe}>
+          <div className="no-print mb-6 flex items-center justify-between gap-3 md:hidden">
+            <button
+              onClick={() => setStage(STAGES[Math.max(0, stageIndex - 1)]!)}
+              disabled={stageIndex === 0}
+              className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
+            >
+              ← {tr("stage.prev")}
+            </button>
+            <span className="text-[0.56rem] tracking-[0.22em] uppercase text-muted-foreground">swipe</span>
+            <button
+              onClick={() => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]!)}
+              disabled={stageIndex === STAGES.length - 1}
+              className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
+            >
+              {tr("stage.next")} →
+            </button>
+          </div>
           <p className="sr-only" aria-live="polite">
             {stage} · pancake risk {edit.architecture.risk} of 100 · {edit.kit.items.length} objects · {edit.kit.layers} films
           </p>
@@ -450,6 +582,13 @@ function EditRoute() {
                         </ul>
                       )}
                       <p className="text-xs text-muted-foreground">Desk examples · {t.examples.join(" · ")}</p>
+                      <ConfirmButton
+                        onPress={() => addToBag([t.id])}
+                        confirmed={tr("edit.inBag")}
+                        className="no-print w-full sm:w-auto"
+                      >
+                        {profile.bag.includes(t.id) ? tr("edit.inBag") : tr("edit.addToBag")}
+                      </ConfirmButton>
                     </div>
                   </article>
                 ))}
@@ -499,12 +638,12 @@ function EditRoute() {
                     too, so it travels.
                   </p>
                   {sets.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {sets.map((s) => (
-                        <span
+                    <ul className="mt-5 grid list-none gap-3 p-0">
+                      {sets.map((s, i) => (
+                        <li
                           key={s.name}
-                          className={`inline-flex items-stretch border ${
-                            loadedSet === s.name ? "border-champagne bg-champagne/10" : "border-border"
+                          className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border p-3 ${
+                            loadedSet === s.name ? "border-champagne bg-champagne/[0.06]" : "border-border"
                           }`}
                         >
                           <button
@@ -512,26 +651,61 @@ function EditRoute() {
                               setMoves(s.moves);
                               setLoadedSet(s.name);
                               setSetName(s.name);
+                              setSets(markScenarioSetUsed(s.name));
                             }}
-                            className={`min-h-11 px-4 py-2 text-[0.64rem] tracking-[0.18em] uppercase transition-colors ${
-                              loadedSet === s.name ? "text-champagne" : "text-muted-foreground hover:text-foreground"
-                            }`}
+                            className={`min-w-0 text-left ${loadedSet === s.name ? "text-champagne" : "text-foreground"}`}
                           >
-                            {s.name} <span className="opacity-60">· {s.moves.length}</span>
+                            <span className="block truncate text-sm">{s.name}</span>
+                            <span className="block text-[0.58rem] tracking-[0.2em] uppercase text-muted-foreground">
+                              {s.moves.length} moves · saved {new Date(s.saved).toLocaleDateString()}
+                            </span>
                           </button>
-                          <button
-                            onClick={() => {
-                              setSets(removeScenarioSet(s.name));
-                              if (loadedSet === s.name) setLoadedSet(undefined);
-                            }}
-                            aria-label={`Remove the ${s.name} scenario set`}
-                            className="min-h-11 border-l border-border px-3 text-xs text-muted-foreground transition-colors hover:text-rouge"
-                          >
-                            ×
-                          </button>
-                        </span>
+                          <div className="flex shrink-0 flex-wrap items-center gap-1">
+                            <IconAction label={`Move ${s.name} up`} disabled={i === 0} onClick={() => setSets(reorderScenarioSet(s.name, -1))}>
+                              ↑
+                            </IconAction>
+                            <IconAction
+                              label={`Move ${s.name} down`}
+                              disabled={i === sets.length - 1}
+                              onClick={() => setSets(reorderScenarioSet(s.name, 1))}
+                            >
+                              ↓
+                            </IconAction>
+                            <IconAction label={`Duplicate ${s.name}`} onClick={() => setSets(duplicateScenarioSet(s.name))}>
+                              ⧉
+                            </IconAction>
+                            <IconAction
+                              label={`Rename ${s.name}`}
+                              onClick={() => {
+                                const next = window.prompt("New name for this set", s.name);
+                                if (next && next.trim()) {
+                                  setSets(renameScenarioSet(s.name, next));
+                                  if (loadedSet === s.name) setLoadedSet(next.trim());
+                                }
+                              }}
+                            >
+                              ✎
+                            </IconAction>
+                            <IconAction
+                              label={`Export the ${s.name} compare packet`}
+                              onClick={() => downloadComparePacket(edit, profile, columns, moveDefs, s.name)}
+                            >
+                              ↓pk
+                            </IconAction>
+                            <IconAction
+                              label={`Delete the ${s.name} scenario set`}
+                              tone="rouge"
+                              onClick={() => {
+                                setSets(removeScenarioSet(s.name));
+                                if (loadedSet === s.name) setLoadedSet(undefined);
+                              }}
+                            >
+                              ×
+                            </IconAction>
+                          </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                   <div className="mt-5 flex flex-wrap items-center gap-3">
                     <label className="sr-only" htmlFor="set-name">
@@ -561,6 +735,35 @@ function EditRoute() {
                     >
                       Export the compare packet
                     </button>
+                  </div>
+                  <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <label className="block">
+                      <span className="text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground">
+                        Restore a set from a shared link
+                      </span>
+                      <input
+                        value={importLink}
+                        onChange={(e) => setImportLink(e.target.value)}
+                        placeholder="Paste an /edit?moves=… link"
+                        className="mt-2 min-h-11 w-full border border-border bg-transparent px-4 py-2 text-sm placeholder:text-muted-foreground"
+                      />
+                    </label>
+                    <button
+                      onClick={() => {
+                        const next = importScenarioSet(importLink, SCENARIO_MOVES.map((m) => m.id));
+                        if (next) {
+                          setSets(next);
+                          setImportLink("");
+                        } else {
+                          setImportError("No usable moves in that link.");
+                        }
+                      }}
+                      disabled={!importLink.trim()}
+                      className="tap self-end border border-border px-5 text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground disabled:opacity-40"
+                    >
+                      Import
+                    </button>
+                    {importError && <p className="text-xs text-rouge sm:col-span-2">{importError}</p>}
                   </div>
                 </div>
               </div>
@@ -699,6 +902,53 @@ function EditRoute() {
 
           {stage === "Alternatives" && (
             <Section title="Alternative pathways" lead="Nine routes to the same intention. Each one names what it trades away.">
+              <div className="panel mb-10 p-6 md:p-8">
+                <p className="eyebrow">Set two beside each other</p>
+                <h3 className="display mt-2 text-3xl">Compare pathways on fit, films, minutes and upkeep</h3>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {([["A", pathA, setPathA], ["B", pathB, setPathB]] as const).map(([slot, value, setter]) => (
+                    <label key={slot} className="block">
+                      <span className="eyebrow">Pathway {slot}</span>
+                      <select
+                        value={value ?? ""}
+                        onChange={(e) => setter(e.target.value || null)}
+                        className="tap mt-3 w-full border border-border bg-transparent px-3 text-sm text-muted-foreground"
+                      >
+                        <option value="">Choose a pathway</option>
+                        {edit.pathways.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} · {p.fit}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+                {(() => {
+                  const a = edit.pathways.find((p) => p.id === pathA);
+                  const b = edit.pathways.find((p) => p.id === pathB);
+                  if (!a || !b) return null;
+                  const rows: [string, string, string, boolean][] = [
+                    ["Fit", `${a.fit}`, `${b.fit}`, a.fit !== b.fit],
+                    ["Objects", `${a.types.length}`, `${b.types.length}`, a.types.length !== b.types.length],
+                    ["Films", `${a.layers}`, `${b.layers}`, a.layers !== b.layers],
+                    ["Minutes", `${a.minutes}`, `${b.minutes}`, a.minutes !== b.minutes],
+                    ["Upkeep", `${a.upkeep}`, `${b.upkeep}`, a.upkeep !== b.upkeep],
+                    ["Trades away", a.tradeoff, b.tradeoff, true],
+                  ];
+                  return (
+                    <div className="mt-8 space-y-3 border-t border-border pt-6">
+                      {rows.map(([k, av, bv, changed]) => (
+                        <div key={k} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-border pb-3 sm:grid-cols-[7rem_1fr_1fr]">
+                          <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">{k}</p>
+                          <p className={`text-sm ${changed ? "" : "text-muted-foreground/60"}`}>{av}</p>
+                          <p className={`text-sm ${changed ? "text-champagne" : "text-muted-foreground/60"}`}>{bv}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="space-y-6">
                 {edit.pathways.map((p, i) => (
                   <article key={p.id} className="panel p-7">
@@ -741,6 +991,17 @@ function EditRoute() {
                         <Ledger items={p.ledger} caption="Pathway ledger" />
                       </div>
                     )}
+                    <div className="no-print mt-6 flex flex-wrap gap-3">
+                      <ConfirmButton onPress={() => addToBag(p.types)} confirmed={tr("edit.inBag")}>
+                        Add these objects to the bag edit
+                      </ConfirmButton>
+                      <button
+                        onClick={() => (pathA ? setPathB(p.id) : setPathA(p.id))}
+                        className="tap border border-border px-4 text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground"
+                      >
+                        Compare this pathway
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -810,24 +1071,42 @@ function EditRoute() {
                 <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{edit.kit.note}</p>
               </div>
               <div className="mt-8 divide-y divide-border border-y border-border">
-                {edit.kit.items.map((it, i) => (
-                  <div key={it.id} className="grid gap-3 py-6 md:grid-cols-[3rem_1fr_1.2fr] md:gap-8">
+                {matched.map(({ item: it, matches }, i) => (
+                  <div key={it.id} className="grid gap-4 py-7 md:grid-cols-[3rem_1fr_1.4fr] md:gap-8">
                     <span className="display text-champagne text-xl">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <h3 className="display text-2xl">{it.label}</h3>
                       <p className="mt-1 text-xs tracking-[0.2em] uppercase text-muted-foreground">Layer weight {it.layerWeight}</p>
+                      <p className="mt-3 text-sm text-muted-foreground">{it.job}</p>
+                      <ConfirmButton
+                        onPress={() => addToBag([it.id])}
+                        confirmed={tr("edit.inBag")}
+                        className="no-print mt-4 w-full sm:w-auto"
+                      >
+                        {profile.bag.includes(it.id) ? tr("edit.inBag") : tr("edit.addToBag")}
+                      </ConfirmButton>
                     </div>
                     <div>
-                      <p className="text-sm">{it.job}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        On the desk ·{" "}
-                        {PRODUCTS.filter((p) => p.typeId === it.id).length
-                          ? PRODUCTS.filter((p) => p.typeId === it.id)
-                              .slice(0, 3)
-                              .map((p) => `${p.brand} ${p.name} ($${p.price})`)
-                              .join(" · ")
-                          : it.example}
-                      </p>
+                      <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">Makeup matched</p>
+                      {matches.length === 0 ? (
+                        <p className="mt-2 text-xs text-muted-foreground">On the desk · {it.example}</p>
+                      ) : (
+                        <ul className="mt-3 space-y-4">
+                          {matches.map((m) => (
+                            <li key={m.product.id} className="border-l border-champagne/40 pl-4">
+                              <p className="text-sm">
+                                {m.product.brand} <span className="text-muted-foreground">{m.product.name}</span>{" "}
+                                <span className="tabular-nums text-muted-foreground">${m.product.price}</span>
+                              </p>
+                              <div className="mt-2 max-w-[16rem]">
+                                <Meter value={m.fit} label="Match" right={`${m.fit}`} />
+                              </div>
+                              <p className="mt-2 text-xs leading-snug text-muted-foreground">{m.why}</p>
+                              {m.shade && <p className="mt-1 text-xs leading-snug text-champagne/90">{m.shade}</p>}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1025,5 +1304,33 @@ function StatInner({ k, v }: { k: string; v: string }) {
         )}
       </p>
     </div>
+  );
+}
+function IconAction({
+  label,
+  onClick,
+  children,
+  disabled,
+  tone,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  tone?: "rouge";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex h-11 min-w-11 items-center justify-center border border-border px-2 text-xs transition-colors disabled:opacity-30 ${
+        tone === "rouge" ? "text-muted-foreground hover:text-rouge" : "text-muted-foreground hover:text-champagne"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

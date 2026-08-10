@@ -153,12 +153,14 @@ export const PRICE_BANDS = [
 
 export interface ProductQuery {
   q?: string | undefined;
-  lane?: string | undefined;
-  brand?: string | undefined;
+  lanes?: string[] | undefined;
+  brands?: string[] | undefined;
   band?: string | undefined;
   filters?: FilterKey[] | undefined;
   maxLayer?: number | undefined;
   typeId?: string | undefined;
+  minPrice?: number | undefined;
+  maxPrice?: number | undefined;
 }
 
 export function searchProducts(query: ProductQuery): DeskProduct[] {
@@ -168,18 +170,48 @@ export function searchProducts(query: ProductQuery): DeskProduct[] {
     const t = TYPE_MAP[p.typeId];
     const haystack = `${p.brand} ${p.name} ${t?.label ?? ""} ${t?.lane ?? ""} ${t?.job ?? ""} ${p.note}`.toLowerCase();
     if (terms.some((term) => !haystack.includes(term))) return false;
-    if (query.lane && t?.lane !== query.lane) return false;
-    if (query.brand && p.brand !== query.brand) return false;
+    if (query.lanes?.length && !query.lanes.includes(t?.lane ?? "")) return false;
+    if (query.brands?.length && !query.brands.includes(p.brand)) return false;
     if (query.band) {
       const band = PRICE_BANDS.find((b) => b.id === query.band);
       if (band && !band.test(p.price)) return false;
     }
+    if (query.minPrice !== undefined && p.price < query.minPrice) return false;
+    if (query.maxPrice !== undefined && p.price > query.maxPrice) return false;
     if (query.filters?.length && !query.filters.every((f) => p.filters.includes(f))) return false;
     if (query.maxLayer !== undefined && (t?.layerWeight ?? 0) > query.maxLayer) return false;
     if (query.typeId && p.typeId !== query.typeId) return false;
     return true;
   });
 }
+
+/* ─────────── Facets ─────────── */
+
+/** How many results each candidate value would return, with the rest of the query held. */
+export function facetCounts<K extends keyof ProductQuery>(
+  query: ProductQuery,
+  field: K,
+  values: string[],
+  mode: "replace" | "toggle" = "toggle",
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const v of values) {
+    const next: ProductQuery = { ...query };
+    if (mode === "toggle") {
+      const current = (query[field] as string[] | undefined) ?? [];
+      (next[field] as unknown) = current.includes(v) ? current.filter((x) => x !== v) : [...current, v];
+    } else {
+      (next[field] as unknown) = query[field] === v ? undefined : v;
+    }
+    out[v] = searchProducts(next).length;
+  }
+  return out;
+}
+
+export const PRICE_EXTENT = {
+  min: Math.min(...PRODUCTS.map((p) => p.price)),
+  max: Math.max(...PRODUCTS.map((p) => p.price)),
+};
 
 /* ─────────── Relevance ranking ─────────── */
 
@@ -252,17 +284,66 @@ export function rankProducts(query: ProductQuery, sort: SortKey = "relevance"): 
 
 /** Which single filter, if loosened, would return the most results. */
 export function loosenSuggestion(query: ProductQuery): { field: string; label: string; count: number } | null {
-  const trials: { field: string; label: string; next: ProductQuery }[] = [
-    ...(query.q ? [{ field: "q", label: "clear the search words", next: { ...query, q: "" } }] : []),
-    ...(query.lane ? [{ field: "lane", label: `drop the ${query.lane} lane`, next: { ...query, lane: undefined } }] : []),
-    ...(query.brand ? [{ field: "brand", label: `open it past ${query.brand}`, next: { ...query, brand: undefined } }] : []),
-    ...(query.band ? [{ field: "band", label: "widen the price band", next: { ...query, band: undefined } }] : []),
-    ...(query.filters?.length ? [{ field: "filters", label: "release the preference filters", next: { ...query, filters: [] } }] : []),
-    ...(query.maxLayer !== undefined ? [{ field: "maxLayer", label: "allow thicker films", next: { ...query, maxLayer: undefined } }] : []),
-    ...(query.typeId ? [{ field: "typeId", label: "look past that one product type", next: { ...query, typeId: undefined } }] : []),
-  ];
+  const trials: { field: string; label: string; next: ProductQuery }[] = [];
+  if (query.q) trials.push({ field: "q", label: "clear the search words", next: { ...query, q: "" } });
+  if (query.lanes?.length)
+    trials.push({ field: "lanes", label: `drop the ${query.lanes.join(" / ")} lane filter`, next: { ...query, lanes: [] } });
+  if (query.brands?.length)
+    trials.push({ field: "brands", label: `open it past ${query.brands.join(" / ")}`, next: { ...query, brands: [] } });
+  if (query.band) trials.push({ field: "band", label: "widen the price band", next: { ...query, band: undefined } });
+  if (query.minPrice !== undefined || query.maxPrice !== undefined)
+    trials.push({ field: "price", label: "release the price range", next: { ...query, minPrice: undefined, maxPrice: undefined } });
+  if (query.filters?.length)
+    trials.push({ field: "filters", label: "release the preference filters", next: { ...query, filters: [] } });
+  if (query.maxLayer !== undefined)
+    trials.push({ field: "maxLayer", label: "allow thicker films", next: { ...query, maxLayer: undefined } });
+  if (query.typeId)
+    trials.push({ field: "typeId", label: "look past that one product type", next: { ...query, typeId: undefined } });
   const scored = trials
     .map((t) => ({ field: t.field, label: t.label, count: searchProducts(t.next).length }))
     .sort((a, b) => b.count - a.count);
   return scored[0] ?? null;
+}
+
+/** The nearest results when the exact combination returns nothing: keep the words, drop the filters. */
+export function closestResults(query: ProductQuery, sort: SortKey = "relevance", limit = 6): RankedProduct[] {
+  return rankProducts({ q: query.q, typeId: query.typeId }, sort).slice(0, limit);
+}
+
+/* ─────────── Recent searches (this browser only) ─────────── */
+
+const RECENT_KEY = "vov_recent_searches_v1";
+
+export function loadRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string").slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberSearch(term: string): string[] {
+  const clean = term.trim().slice(0, 48);
+  if (!clean || typeof window === "undefined") return loadRecentSearches();
+  const next = [clean, ...loadRecentSearches().filter((s) => s.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+  try {
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* storage unavailable */
+  }
+  return next;
+}
+
+export function clearRecentSearches(): string[] {
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(RECENT_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+  }
+  return [];
 }

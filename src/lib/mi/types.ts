@@ -1,6 +1,7 @@
 export type SkinType = "dry" | "normal" | "combination" | "oily";
 export type Climate = "humid" | "temperate" | "dry" | "altitude";
 export type Budget = "lean" | "mid" | "open";
+export type Undertone = "cool" | "neutral" | "warm";
 
 export type FilterKey =
   | "mineral"
@@ -24,6 +25,8 @@ export interface Profile {
   filters: FilterKey[];
   bag: string[]; // product type ids currently owned
   budget: Budget;
+  undertone: Undertone;
+  depth: number; // 1 porcelain - 10 rich deep
 }
 
 export type Tier = "core" | "consider" | "hold";
