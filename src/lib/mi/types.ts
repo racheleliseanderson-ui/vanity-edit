@@ -1,7 +1,28 @@
 export type SkinType = "dry" | "normal" | "combination" | "oily";
 export type Climate = "humid" | "temperate" | "dry" | "altitude";
 export type Budget = "lean" | "mid" | "open";
-export type Undertone = "cool" | "neutral" | "warm";
+export type Undertone =
+  | "cool"
+  | "neutral"
+  | "warm"
+  | "olive"
+  | "golden-olive"
+  | "deep-neutral"
+  | "red-leaning";
+
+/** Where a house or formula is actually easy to buy. Not a claim about origin quality. */
+export type Region =
+  | "North America"
+  | "United Kingdom"
+  | "Europe"
+  | "Korea"
+  | "Japan"
+  | "India"
+  | "West Africa"
+  | "Middle East"
+  | "Brazil"
+  | "Latin America"
+  | "Australia";
 
 export type FilterKey =
   | "mineral"
