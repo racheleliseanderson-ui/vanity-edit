@@ -162,6 +162,9 @@ function EditRoute() {
   const [previousProfile, setPreviousProfile] = useState<Profile | null>(null);
   const addToBag = (ids: string[]) =>
     setProfile((p) => ({ ...p, bag: [...new Set([...p.bag, ...ids.filter((id) => TYPE_MAP[id])])] }));
+  const matched = useMemo(() => matchKit(profile, edit.kit.items), [profile, edit.kit.items]);
+  const [pathA, setPathA] = useState<string | null>(null);
+  const [pathB, setPathB] = useState<string | null>(null);
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
     const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? -99 : e.key === "End" ? 99 : 0;
     if (!dir) return;
