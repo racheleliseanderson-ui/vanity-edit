@@ -309,3 +309,41 @@ export function loosenSuggestion(query: ProductQuery): { field: string; label: s
 export function closestResults(query: ProductQuery, sort: SortKey = "relevance", limit = 6): RankedProduct[] {
   return rankProducts({ q: query.q, typeId: query.typeId }, sort).slice(0, limit);
 }
+
+/* ─────────── Recent searches (this browser only) ─────────── */
+
+const RECENT_KEY = "vov_recent_searches_v1";
+
+export function loadRecentSearches(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string").slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberSearch(term: string): string[] {
+  const clean = term.trim().slice(0, 48);
+  if (!clean || typeof window === "undefined") return loadRecentSearches();
+  const next = [clean, ...loadRecentSearches().filter((s) => s.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+  try {
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* storage unavailable */
+  }
+  return next;
+}
+
+export function clearRecentSearches(): string[] {
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(RECENT_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+  }
+  return [];
+}
