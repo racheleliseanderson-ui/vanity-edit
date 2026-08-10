@@ -138,7 +138,7 @@ function EditRoute() {
   };
 
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { t } = useI18n();
+  const { t: tr } = useI18n();
   const stageIndex = STAGES.indexOf(stage);
   const swipe = useSwipe(
     () => setStage(STAGES[Math.min(STAGES.length - 1, stageIndex + 1)]!),
@@ -213,7 +213,7 @@ function EditRoute() {
         <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="eyebrow">{t("edit.smartPaths")}</p>
+              <p className="eyebrow">{tr("edit.smartPaths")}</p>
               <h2 className="display mt-2 text-3xl md:text-4xl">
                 Nine ways in, <span className="gilt-text italic">each one honest about the trade</span>
               </h2>
@@ -227,7 +227,7 @@ function EditRoute() {
                 }}
                 className="tap border border-border px-5 text-[0.62rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground"
               >
-                {t("edit.undoPath")}
+                {tr("edit.undoPath")}
               </button>
             )}
           </div>
@@ -265,7 +265,7 @@ function EditRoute() {
                         on ? "border-champagne bg-champagne/15 text-champagne" : "border-champagne/50 text-champagne hover:bg-champagne/10"
                       }`}
                     >
-                      {on ? "This path is live" : t("edit.applyPath")}
+                      {on ? "This path is live" : tr("edit.applyPath")}
                     </button>
                   </article>
                 );
@@ -380,7 +380,7 @@ function EditRoute() {
             </div>
           </Group>
 
-          <Group title={t("edit.shade")} note="Used for shade families only — never an exact match promise.">
+          <Group title={tr("edit.shade")} note="Used for shade families only — never an exact match promise.">
             <div className="grid grid-cols-3 gap-2">
               {UNDERTONES.map((u) => (
                 <Chip key={u} active={profile.undertone === u} onClick={() => set({ undertone: u })}>
@@ -457,7 +457,7 @@ function EditRoute() {
               disabled={stageIndex === 0}
               className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
             >
-              ← {t("stage.prev")}
+              ← {tr("stage.prev")}
             </button>
             <span className="text-[0.56rem] tracking-[0.22em] uppercase text-muted-foreground">swipe</span>
             <button
@@ -465,7 +465,7 @@ function EditRoute() {
               disabled={stageIndex === STAGES.length - 1}
               className="tap border border-border px-4 text-[0.58rem] tracking-[0.22em] uppercase text-muted-foreground disabled:opacity-30"
             >
-              {t("stage.next")} →
+              {tr("stage.next")} →
             </button>
           </div>
           <p className="sr-only" aria-live="polite">
