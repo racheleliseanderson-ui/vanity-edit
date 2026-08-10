@@ -584,7 +584,15 @@ function EditRoute() {
                     </div>
                     <div>
                       <p className="text-sm">{it.job}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">Desk example · {it.example}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        On the desk ·{" "}
+                        {PRODUCTS.filter((p) => p.typeId === it.id).length
+                          ? PRODUCTS.filter((p) => p.typeId === it.id)
+                              .slice(0, 3)
+                              .map((p) => `${p.brand} ${p.name} ($${p.price})`)
+                              .join(" · ")
+                          : it.example}
+                      </p>
                     </div>
                   </div>
                 ))}
