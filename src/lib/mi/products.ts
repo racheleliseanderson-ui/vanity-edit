@@ -152,12 +152,12 @@ export const PRICE_BANDS = [
 ] as const;
 
 export interface ProductQuery {
-  q?: string;
-  lane?: string;
-  brand?: string;
-  band?: string;
-  filters?: FilterKey[];
-  maxLayer?: number;
+  q?: string | undefined;
+  lane?: string | undefined;
+  brand?: string | undefined;
+  band?: string | undefined;
+  filters?: FilterKey[] | undefined;
+  maxLayer?: number | undefined;
 }
 
 export function searchProducts(query: ProductQuery): DeskProduct[] {
