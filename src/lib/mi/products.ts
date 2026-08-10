@@ -87,7 +87,7 @@ export const PRODUCTS: DeskProduct[] = [
   P("Kosas", "Revealer Super Creamy + Brightening Concealer", "brightening-concealer", 32, "Light back into the under-eye with no crease seam.", ["vegan"], 28),
   P("Tower 28", "Swipe Serum Concealer", "strategic-concealer", 22, "Sensitive-aware placed coverage.", ["fragranceFree", "vegan"], 20),
   P("RMS Beauty", "UnCoverup Cream Concealer", "strategic-concealer", 38, "Warm it on the fingertip; it becomes skin.", ["vegan"], 20),
-  P("Tower 28", "MakeWaves Lengthening Concealer", "colour-corrector", 22, "Neutralises redness before a base is even considered.", ["fragranceFree", "vegan"], 6),
+  P("Tower 28", "SOS Daily Rescue Colour Corrector", "colour-corrector", 22, "Neutralises redness before a base is even considered.", ["fragranceFree", "vegan"], 6),
   P("Ere Perez", "Arnica All-Cover Pot", "colour-corrector", 39, "Botanical pot corrector for redness placement.", ["vegan"], 6),
   P("Fitglow Beauty", "Conceal +", "blemish-concealer", 42, "Highest opacity on the smallest possible area.", ["vegan"], 10),
   P("Clove + Hallow", "Conceal + Correct", "blemish-concealer", 24, "Lean-budget spot coverage that holds.", ["vegan", "fragranceFree"], 20),
