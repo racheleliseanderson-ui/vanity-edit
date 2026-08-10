@@ -293,20 +293,39 @@ function EditRoute() {
 
         {/* Output */}
         <div>
-          <nav className="no-print sticky top-[86px] z-20 -mx-5 mb-10 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl md:mx-0 md:px-0">
+          <div
+            role="tablist"
+            aria-label="Stages of the edit"
+            className="no-print sticky top-[86px] z-20 -mx-5 mb-10 flex snap-x gap-1 overflow-x-auto border-b border-border bg-background/90 px-5 py-2 backdrop-blur-xl md:mx-0 md:px-0"
+          >
             {STAGES.map((s, i) => (
               <button
                 key={s}
+                role="tab"
+                id={`stage-tab-${s}`}
+                aria-selected={stage === s}
+                aria-controls="stage-panel"
+                tabIndex={stage === s ? 0 : -1}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                onKeyDown={(e) => onTabKey(e, i)}
                 onClick={() => setStage(s)}
-                className={`flex items-baseline gap-2 whitespace-nowrap px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
-                  stage === s ? "text-champagne" : "text-muted-foreground hover:text-foreground"
+                className={`flex min-h-11 snap-start items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
+                  stage === s
+                    ? "border-champagne text-champagne"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <span className="opacity-50">{String(i + 1).padStart(2, "0")}</span>
                 {s}
               </button>
             ))}
-          </nav>
+          </div>
+          <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`}>
+          <p className="sr-only" aria-live="polite">
+            {stage} · pancake risk {edit.architecture.risk} of 100 · {edit.kit.items.length} objects · {edit.kit.layers} films
+          </p>
 
           {stage === "Match" && (
             <Section title="Makeup Match" lead="Product types scored against your profile. Layer weight is penalised, not celebrated.">
