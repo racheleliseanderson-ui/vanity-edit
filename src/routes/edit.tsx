@@ -836,6 +836,53 @@ function EditRoute() {
 
           {stage === "Alternatives" && (
             <Section title="Alternative pathways" lead="Nine routes to the same intention. Each one names what it trades away.">
+              <div className="panel mb-10 p-6 md:p-8">
+                <p className="eyebrow">Set two beside each other</p>
+                <h3 className="display mt-2 text-3xl">Compare pathways on fit, films, minutes and upkeep</h3>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {([["A", pathA, setPathA], ["B", pathB, setPathB]] as const).map(([slot, value, setter]) => (
+                    <label key={slot} className="block">
+                      <span className="eyebrow">Pathway {slot}</span>
+                      <select
+                        value={value ?? ""}
+                        onChange={(e) => setter(e.target.value || null)}
+                        className="tap mt-3 w-full border border-border bg-transparent px-3 text-sm text-muted-foreground"
+                      >
+                        <option value="">Choose a pathway</option>
+                        {edit.pathways.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} · {p.fit}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+                {(() => {
+                  const a = edit.pathways.find((p) => p.id === pathA);
+                  const b = edit.pathways.find((p) => p.id === pathB);
+                  if (!a || !b) return null;
+                  const rows: [string, string, string, boolean][] = [
+                    ["Fit", `${a.fit}`, `${b.fit}`, a.fit !== b.fit],
+                    ["Objects", `${a.types.length}`, `${b.types.length}`, a.types.length !== b.types.length],
+                    ["Films", `${a.layers}`, `${b.layers}`, a.layers !== b.layers],
+                    ["Minutes", `${a.minutes}`, `${b.minutes}`, a.minutes !== b.minutes],
+                    ["Upkeep", `${a.upkeep}`, `${b.upkeep}`, a.upkeep !== b.upkeep],
+                    ["Trades away", a.tradeoff, b.tradeoff, true],
+                  ];
+                  return (
+                    <div className="mt-8 space-y-3 border-t border-border pt-6">
+                      {rows.map(([k, av, bv, changed]) => (
+                        <div key={k} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-border pb-3 sm:grid-cols-[7rem_1fr_1fr]">
+                          <p className="text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">{k}</p>
+                          <p className={`text-sm ${changed ? "" : "text-muted-foreground/60"}`}>{av}</p>
+                          <p className={`text-sm ${changed ? "text-champagne" : "text-muted-foreground/60"}`}>{bv}</p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
               <div className="space-y-6">
                 {edit.pathways.map((p, i) => (
                   <article key={p.id} className="panel p-7">
@@ -878,6 +925,17 @@ function EditRoute() {
                         <Ledger items={p.ledger} caption="Pathway ledger" />
                       </div>
                     )}
+                    <div className="no-print mt-6 flex flex-wrap gap-3">
+                      <ConfirmButton onPress={() => addToBag(p.types)} confirmed={tr("edit.inBag")}>
+                        Add these objects to the bag edit
+                      </ConfirmButton>
+                      <button
+                        onClick={() => (pathA ? setPathB(p.id) : setPathA(p.id))}
+                        className="tap border border-border px-4 text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground hover:text-foreground"
+                      >
+                        Compare this pathway
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>
