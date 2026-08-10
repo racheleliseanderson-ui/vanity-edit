@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Page } from "@/components/mi/chrome";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
@@ -10,14 +10,22 @@ import {
   PRESETS,
   TYPE_MAP,
 } from "@/lib/mi/catalog";
-import { availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { PRODUCTS } from "@/lib/mi/products";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
-  validateSearch: (s: Record<string, unknown>): { path?: string } =>
-    typeof s["path"] === "string" ? { path: s["path"] as string } : {},
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { path?: string | undefined; stage?: string | undefined; bag?: string | undefined; moves?: string | undefined } => {
+    const out: { path?: string; stage?: string; bag?: string; moves?: string } = {};
+    for (const k of ["path", "stage", "bag", "moves"] as const) {
+      const v = s[k];
+      if (typeof v === "string" && v) out[k] = v;
+    }
+    return out;
+  },
   head: () => ({
     meta: [
       { title: "The Edit · Makeup Intelligence" },
