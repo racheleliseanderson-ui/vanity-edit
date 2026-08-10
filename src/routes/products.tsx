@@ -15,14 +15,14 @@ import {
 import type { FilterKey } from "@/lib/mi/types";
 
 interface ProductSearch {
-  q?: string;
-  lane?: string;
-  brand?: string;
-  band?: string;
-  filters?: string;
-  thin?: boolean;
-  sort?: string;
-  type?: string;
+  q?: string | undefined;
+  lane?: string | undefined;
+  brand?: string | undefined;
+  band?: string | undefined;
+  filters?: string | undefined;
+  thin?: boolean | undefined;
+  sort?: string | undefined;
+  type?: string | undefined;
 }
 
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
@@ -86,13 +86,16 @@ function ProductsRoute() {
   const thinOnly = search.thin === true;
   const sort = (SORTS.some((s) => s.id === search.sort) ? (search.sort as SortKey) : "relevance") as SortKey;
   const filters = useMemo(
-    () => (search.filters ? (search.filters.split(",").filter((f) => FILTERS.some((x) => x.id === f)) as FilterKey[]) : []),
+    () =>
+      search.filters
+        ? (search.filters.split(",").filter((f: string) => FILTERS.some((x) => x.id === f)) as FilterKey[])
+        : [],
     [search.filters],
   );
 
-  const patch = (next: Partial<ProductSearch>) =>
+  const patch = (next: ProductSearch) =>
     navigate({
-      search: (prev) => {
+      search: (prev: ProductSearch) => {
         const merged: ProductSearch = { ...prev, ...next };
         for (const k of Object.keys(merged) as (keyof ProductSearch)[]) {
           if (merged[k] === "" || merged[k] === undefined || merged[k] === false) delete merged[k];
