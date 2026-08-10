@@ -11,8 +11,10 @@ import {
   TYPE_MAP,
 } from "@/lib/mi/catalog";
 import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { downloadComparePacket } from "@/lib/mi/compare-packet";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { PRODUCTS } from "@/lib/mi/products";
+import { loadScenarioSets, removeScenarioSet, saveScenarioSet, type ScenarioSet } from "@/lib/mi/scenario-sets";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
@@ -96,6 +98,22 @@ function EditRoute() {
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
   const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
   const baseline = columns[0];
+
+  /* Saved scenario sets — local to this browser. */
+  const [sets, setSets] = useState<ScenarioSet[]>([]);
+  const [setName, setSetName] = useState("");
+  const [loadedSet, setLoadedSet] = useState<string | undefined>(undefined);
+  useEffect(() => setSets(loadScenarioSets()), []);
+
+  const moveDefs = useMemo(
+    () =>
+      live
+        .map((id) => SCENARIO_MOVES.find((m) => m.id === id))
+        .filter((m): m is (typeof SCENARIO_MOVES)[number] => Boolean(m))
+        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(profile), note: m.note })),
+    [live, profile],
+  );
+  const exportCompare = () => downloadComparePacket(edit, profile, columns, moveDefs, loadedSet);
 
   /** Apply one costed move straight into the live profile. */
   const applyMove = (id: string) => {
@@ -473,6 +491,78 @@ function EditRoute() {
                     );
                   })}
                 </div>
+
+                <div className="mt-8 border-t border-border pt-6">
+                  <p className="eyebrow">Scenario sets</p>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                    Name this selection and it stays in this browser for next time. Loading a set updates the address bar
+                    too, so it travels.
+                  </p>
+                  {sets.length > 0 && (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      {sets.map((s) => (
+                        <span
+                          key={s.name}
+                          className={`inline-flex items-stretch border ${
+                            loadedSet === s.name ? "border-champagne bg-champagne/10" : "border-border"
+                          }`}
+                        >
+                          <button
+                            onClick={() => {
+                              setMoves(s.moves);
+                              setLoadedSet(s.name);
+                              setSetName(s.name);
+                            }}
+                            className={`min-h-11 px-4 py-2 text-[0.64rem] tracking-[0.18em] uppercase transition-colors ${
+                              loadedSet === s.name ? "text-champagne" : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {s.name} <span className="opacity-60">· {s.moves.length}</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSets(removeScenarioSet(s.name));
+                              if (loadedSet === s.name) setLoadedSet(undefined);
+                            }}
+                            aria-label={`Remove the ${s.name} scenario set`}
+                            className="min-h-11 border-l border-border px-3 text-xs text-muted-foreground transition-colors hover:text-rouge"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <label className="sr-only" htmlFor="set-name">
+                      Name this scenario set
+                    </label>
+                    <input
+                      id="set-name"
+                      value={setName}
+                      onChange={(e) => setSetName(e.target.value)}
+                      placeholder="Name this set"
+                      className="min-h-11 min-w-[14rem] flex-1 border border-border bg-transparent px-4 py-2 text-sm placeholder:text-muted-foreground"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!setName.trim() || live.length === 0) return;
+                        setSets(saveScenarioSet(setName, live));
+                        setLoadedSet(setName.trim());
+                      }}
+                      disabled={!setName.trim() || live.length === 0}
+                      className="min-h-11 border border-champagne/60 px-5 py-2 text-[0.62rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10 disabled:opacity-40"
+                    >
+                      Save this set
+                    </button>
+                    <button
+                      onClick={exportCompare}
+                      className="min-h-11 border border-champagne bg-champagne/10 px-5 py-2 text-[0.62rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
+                    >
+                      Export the compare packet
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <p className="no-print mt-6 text-[0.62rem] tracking-[0.22em] uppercase text-muted-foreground md:hidden">
@@ -761,6 +851,12 @@ function EditRoute() {
                   className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
                 >
                   Export the full packet
+                </button>
+                <button
+                  onClick={exportCompare}
+                  className="inline-flex border border-champagne/60 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+                >
+                  Export the compare packet
                 </button>
                 <button
                   onClick={() => window.print()}
