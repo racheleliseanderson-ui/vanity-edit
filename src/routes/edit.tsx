@@ -167,8 +167,26 @@ function EditRoute() {
       </section>
 
       <div className="mx-auto grid max-w-[1400px] gap-12 px-5 py-14 md:px-10 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        {/* Instrument panel */}
-        <aside className="no-print space-y-10 lg:sticky lg:top-[110px] lg:max-h-[calc(100vh-140px)] lg:self-start lg:overflow-y-auto lg:pr-4">
+        {/* Instrument panel — a drawer on small screens, a sticky rail from lg up */}
+        <div className="no-print lg:hidden">
+          <button
+            onClick={() => setPanelOpen((o) => !o)}
+            aria-expanded={panelOpen}
+            aria-controls="instrument-panel"
+            className="flex min-h-11 w-full items-center justify-between border border-champagne/50 bg-champagne/5 px-5 py-3 text-left"
+          >
+            <span className="text-[0.66rem] tracking-[0.24em] uppercase text-champagne">
+              {panelOpen ? "Close the instrument" : "Adjust the instrument"}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {profile.goals.length} goals · {profile.skin} · {profile.coverage}/100 · {profile.ceiling} objects
+            </span>
+          </button>
+        </div>
+        <aside
+          id="instrument-panel"
+          className={`no-print space-y-10 ${panelOpen ? "" : "hidden"} lg:block lg:sticky lg:top-[110px] lg:max-h-[calc(100vh-140px)] lg:self-start lg:space-y-10 lg:overflow-y-auto lg:pr-4`}
+        >
           <Group title="Goals" note="Pick as many as are true.">
             <div className="grid gap-2">
               {GOALS.map((g) => (
