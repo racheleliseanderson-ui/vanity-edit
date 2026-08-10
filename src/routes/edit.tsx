@@ -381,6 +381,7 @@ function EditRoute() {
           </Group>
 
           <Group title="What is in the bag now" note="Used for the bag edit — nothing gets thrown away.">
+            <p className="sr-only">Toggle the product types you already own.</p>
             <div className="grid gap-2">
               {Object.values(TYPE_MAP)
                 .filter((t) => t.lane !== "care")
