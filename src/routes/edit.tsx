@@ -1155,7 +1155,7 @@ function EditRoute() {
             <Section title="The edit packet" lead="Print or save as PDF. Yours to take to the counter.">
               <div className="no-print mb-10 flex flex-wrap gap-3">
                 <button
-                  onClick={() => downloadFullPacket(edit, profile, columns)}
+                  onClick={() => downloadFullPacket(edit, committed, columns)}
                   className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
                 >
                   Export the full packet
@@ -1272,6 +1272,20 @@ function EditRoute() {
               </div>
             </Section>
           )}
+
+          <RunConsole
+            profile={profile}
+            path={activePreset}
+            moves={live}
+            stage={stage}
+            timings={timings}
+            state={pipelineState}
+            held={held}
+            onToggleHold={() => setHeld((h) => !h)}
+            onRun={() => setCommitted(profile)}
+            onReset={resetRun}
+            onLoad={loadRun}
+          />
           </div>
         </div>
       </div>
