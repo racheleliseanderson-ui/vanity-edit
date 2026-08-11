@@ -592,6 +592,40 @@ export function runEdit(p: Profile): Edit {
     whatIf: whatIf(p),
   };
 }
+
+/* ─────────────── Instrumented run ─────────────── */
+
+export interface StageTiming {
+  id: string;
+  label: string;
+  ms: number;
+}
+
+/** Same maths, timed per stage, so a stale or slow panel is visible rather than silently wrong. */
+export function runEditTimed(p: Profile): { edit: Edit; timings: StageTiming[] } {
+  const now = () => (typeof performance === "undefined" ? Date.now() : performance.now());
+  const timings: StageTiming[] = [];
+  const step = <T,>(id: string, label: string, fn: () => T): T => {
+    const t0 = now();
+    const out = fn();
+    timings.push({ id, label, ms: Math.round((now() - t0) * 100) / 100 });
+    return out;
+  };
+
+  const types = step("types", "Type scoring", () => scoreTypes(p));
+  const kit = step("kit", "Kit build", () => buildKit(p, types));
+  const arch = step("architecture", "Architecture", () => architecture(p, kit.layers));
+  const path = step("pathways", "Pathways", () => pathways(p, types));
+  const toolCalls = step("tools", "Tools", () => tools(p, kit));
+  const bag = step("bag", "Bag edit", () => bagEdit(p, types));
+  const coaching = step("coach", "Coaching", () => coach(p, arch, path, kit));
+  const sensitivity = step("whatif", "Sensitivity", () => whatIf(p));
+
+  return {
+    edit: { architecture: arch, types, pathways: path, tools: toolCalls, bag, kit, coach: coaching, whatIf: sensitivity },
+    timings,
+  };
+}
 /* ─────────────── Scenario comparison ─────────────── */
 
 export interface ScenarioMoveDef {
