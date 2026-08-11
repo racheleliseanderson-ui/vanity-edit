@@ -1158,7 +1158,7 @@ function EditRoute() {
                   onClick={() => downloadFullPacket(edit, committed, columns)}
                   className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
                 >
-                  Export the full packet
+                  Export the decision packet
                 </button>
                 <button
                   onClick={exportCompare}
@@ -1174,7 +1174,7 @@ function EditRoute() {
                 </button>
               </div>
               <p className="no-print mb-10 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                The full packet is a single self-contained file: your inputs, the architecture ledger, every scored
+                The decision packet is a single self-contained file: the call itself, then your inputs, the architecture ledger, every scored
                 product type, all nine pathways, tools, bag calls, coaching, the costed single moves and the{" "}
                 {columns.length} scenario{columns.length === 1 ? "" : "s"} you have lined up — with named formulas and
                 prices beside each kit object. Open it anywhere, or print it to PDF.
