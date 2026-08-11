@@ -94,7 +94,15 @@ function EditRoute() {
   };
   const [activePreset, setActivePreset] = useState<string | undefined>(path);
 
-  const edit = useMemo(() => runEdit(profile), [profile]);
+  /* Pipeline run management: `committed` is what the engine has actually scored. */
+  const [held, setHeld] = useState(false);
+  const [committed, setCommitted] = useState<Profile>(profile);
+  useEffect(() => {
+    if (!held) setCommitted(profile);
+  }, [held, profile]);
+  const { edit, timings } = useMemo(() => runEditTimed(committed), [committed]);
+  const stale = committed !== profile;
+  const pipelineState: PipelineState = stale ? "stale" : held ? "held" : "done";
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
@@ -110,9 +118,9 @@ function EditRoute() {
       });
       return value;
     });
-  const offers = useMemo(() => availableMoves(profile), [profile]);
+  const offers = useMemo(() => availableMoves(committed), [committed]);
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
-  const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
+  const columns = useMemo(() => compareScenarios(committed, live), [committed, live]);
   const baseline = columns[0];
 
   /* Saved scenario sets — local to this browser. */
@@ -128,10 +136,26 @@ function EditRoute() {
       live
         .map((id) => SCENARIO_MOVES.find((m) => m.id === id))
         .filter((m): m is (typeof SCENARIO_MOVES)[number] => Boolean(m))
-        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(profile), note: m.note })),
-    [live, profile],
+        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(committed), note: m.note })),
+    [live, committed],
   );
-  const exportCompare = () => downloadComparePacket(edit, profile, columns, moveDefs, loadedSet);
+  const exportCompare = () => downloadComparePacket(edit, committed, columns, moveDefs, loadedSet);
+
+  /** Reset to the current smart path's defaults, or the house default. */
+  const resetRun = () => {
+    const preset = PRESETS.find((p) => p.id === activePreset);
+    const next: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    setProfile(next);
+    setCommitted(next);
+  };
+
+  const loadRun = (run: SavedRun) => {
+    setProfile(run.profile);
+    setCommitted(run.profile);
+    setActivePreset(run.path);
+    setMoves(run.moves);
+    if (STAGES.includes(run.stage as Stage)) setStage(run.stage as Stage);
+  };
 
   /** Apply one costed move straight into the live profile. */
   const applyMove = (id: string) => {
@@ -166,7 +190,7 @@ function EditRoute() {
   const [previousProfile, setPreviousProfile] = useState<Profile | null>(null);
   const addToBag = (ids: string[]) =>
     setProfile((p) => ({ ...p, bag: [...new Set([...p.bag, ...ids.filter((id) => TYPE_MAP[id])])] }));
-  const matched = useMemo(() => matchKit(profile, edit.kit.items), [profile, edit.kit.items]);
+  const matched = useMemo(() => matchKit(committed, edit.kit.items), [committed, edit.kit.items]);
   const [pathA, setPathA] = useState<string | null>(null);
   const [pathB, setPathB] = useState<string | null>(null);
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
