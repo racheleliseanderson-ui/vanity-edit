@@ -294,8 +294,37 @@ function ProductsRoute() {
                   })}
                 </div>
 
+                <p className="eyebrow mt-7">Where it is sold</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Region is availability, not a quality ranking.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PRODUCT_REGIONS.map((r) => {
+                    const on = regions.includes(r);
+                    const count = regionCounts[r] ?? 0;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() =>
+                          patch({
+                            regions: (on ? regions.filter((x: string) => x !== r) : [...regions, r]).join(",") || undefined,
+                          })
+                        }
+                        aria-pressed={on}
+                        disabled={!on && count === 0}
+                        className={`tap border px-4 text-[0.62rem] tracking-[0.2em] uppercase transition-colors disabled:opacity-30 ${
+                          on
+                            ? "border-champagne bg-champagne/10 text-champagne"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {r} <span className="opacity-60">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <p className="eyebrow mt-7">Product type</p>
-                <p className="sr-only">Region facet follows the type selector.</p>
                 <select
                   value={typeId}
                   onChange={(e) => patch({ type: e.target.value || undefined })}
