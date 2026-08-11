@@ -116,6 +116,10 @@ function ProductsRoute() {
         : [],
     [search.filters],
   );
+  const regions = useMemo(
+    () => (search.regions ? search.regions.split(",").filter((r: string) => PRODUCT_REGIONS.includes(r as never)) : []),
+    [search.regions],
+  );
 
   const [bagged, setBagged] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
@@ -143,6 +147,7 @@ function ProductsRoute() {
       q,
       lanes: lanes.length ? lanes : undefined,
       brands: brands.length ? brands : undefined,
+      regions: regions.length ? regions : undefined,
       band: band || undefined,
       typeId: typeId || undefined,
       filters,
@@ -150,7 +155,7 @@ function ProductsRoute() {
       maxPrice: search.max,
       ...(thinOnly ? { maxLayer: 1 } : {}),
     }),
-    [q, lanes, brands, band, typeId, filters, thinOnly, search.min, search.max],
+    [q, lanes, brands, regions, band, typeId, filters, thinOnly, search.min, search.max],
   );
 
   const results = useMemo(() => rankProducts(query, sort), [query, sort]);
@@ -158,6 +163,7 @@ function ProductsRoute() {
   const loosen = useMemo(() => (results.length === 0 ? loosenSuggestion(query) : null), [results.length, query]);
   const closest = useMemo(() => (results.length === 0 ? closestResults(query, sort) : []), [results.length, query, sort]);
   const laneCounts = useMemo(() => facetCounts(query, "lanes", [...LANES]), [query]);
+  const regionCounts = useMemo(() => facetCounts(query, "regions", [...PRODUCT_REGIONS]), [query]);
   const filterCounts = useMemo(
     () => facetCounts({ ...query, filters: filters as unknown as string[] } as ProductQuery, "filters", FILTERS.map((f) => f.id)),
     [query, filters],
@@ -171,6 +177,10 @@ function ProductsRoute() {
     ...(q ? [{ label: `“${q}”`, clear: () => patch({ q: undefined }) }] : []),
     ...lanes.map((l: string) => ({ label: l, clear: () => patch({ lanes: lanes.filter((x: string) => x !== l).join(",") || undefined }) })),
     ...brands.map((b: string) => ({ label: b, clear: () => patch({ brands: brands.filter((x: string) => x !== b).join(",") || undefined }) })),
+    ...regions.map((r: string) => ({
+      label: r,
+      clear: () => patch({ regions: regions.filter((x: string) => x !== r).join(",") || undefined }),
+    })),
     ...(band ? [{ label: PRICE_BANDS.find((b) => b.id === band)?.label ?? band, clear: () => patch({ band: undefined }) }] : []),
     ...(search.min !== undefined || search.max !== undefined
       ? [{ label: `$${search.min ?? PRICE_EXTENT.min}–$${search.max ?? PRICE_EXTENT.max}`, clear: () => patch({ min: undefined, max: undefined }) }]
