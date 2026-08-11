@@ -1,4 +1,4 @@
-import type { FilterKey } from "./types";
+import type { FilterKey, Region } from "./types";
 import { TYPE_MAP } from "./catalog";
 
 /** A named, finished formula on the desk. Education only — never a safety ranking. */
@@ -11,6 +11,8 @@ export interface DeskProduct {
   shades?: number;
   note: string;
   filters: FilterKey[];
+  /** Where it is easiest to buy. Absent means North America. */
+  region?: Region;
 }
 
 const P = (
@@ -21,6 +23,7 @@ const P = (
   note: string,
   filters: FilterKey[] = [],
   shades?: number,
+  region?: Region,
 ): DeskProduct => ({
   id: `${brand}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
   brand,
@@ -30,6 +33,7 @@ const P = (
   note,
   filters,
   ...(shades ? { shades } : {}),
+  ...(region ? { region } : {}),
 });
 
 export const PRODUCTS: DeskProduct[] = [
