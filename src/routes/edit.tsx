@@ -211,20 +211,27 @@ function EditRoute() {
   return (
     <Page>
       {/* Preset rail + live instrument */}
-      <section className="border-b border-border bg-card/30">
-        <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="eyebrow">Step into the edit</p>
-              <h1 className="display mt-3 text-4xl md:text-6xl">
-                Your <span className="gilt-text italic">personal edit</span>
+      <section className="field-oxblood border-b border-border">
+        <div className="mx-auto max-w-[1400px] px-5 py-14 md:px-10 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-end">
+            <div className="min-w-0">
+              <p className="eyebrow">Step into the edit · Fifth Avenue, ground floor</p>
+              <h1 className="marquee mt-4">
+                The<br />
+                <span className="gilt-text italic">Edit</span>
               </h1>
-              <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                Start from a smart path — each one is already costed for pancake risk, objects and minutes — then revise
-                every field underneath it.
-              </p>
+              <div className="rule-heavy mt-8 max-w-xl pt-5">
+                <p className="engine-type text-[0.62rem] uppercase text-champagne">
+                  risk {edit.architecture.risk} · skin-like {edit.architecture.skinlike} · {edit.kit.layers} films ·{" "}
+                  {edit.kit.minutes} min
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  Start from a smart path — each one already costed for pancake risk, objects and minutes — then revise
+                  every field underneath it. Nothing here flatters you. It scores you.
+                </p>
+              </div>
             </div>
-            <div className="panel p-7">
+            <div className="vitrine p-7 md:p-9">
               <RiskDial arch={edit.architecture} />
               <div className="mt-6">
                 <Spectrum value={edit.architecture.risk} />
