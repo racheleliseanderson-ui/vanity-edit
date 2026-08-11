@@ -388,13 +388,16 @@ function EditRoute() {
           </Group>
 
           <Group title={tr("edit.shade")} note="Used for shade families only — never an exact match promise.">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {UNDERTONES.map((u) => (
-                <Chip key={u} active={profile.undertone === u} onClick={() => set({ undertone: u })}>
-                  <span className="capitalize">{u}</span>
+                <Chip key={u.id} active={profile.undertone === u.id} onClick={() => set({ undertone: u.id })}>
+                  <span title={u.note}>{u.label}</span>
                 </Chip>
               ))}
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              {UNDERTONES.find((u) => u.id === profile.undertone)?.note}
+            </p>
             <Slider
               label="Depth"
               hint={["porcelain", "fair", "light", "light-medium", "medium", "medium-tan", "tan", "deep-tan", "deep", "rich deep"][profile.depth - 1] ?? "medium"}
