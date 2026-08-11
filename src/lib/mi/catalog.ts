@@ -300,7 +300,13 @@ export interface DeskBrand {
   less: string[];
   examples: string[];
   filters: FilterKey[];
+  /** Where the house is easiest to buy. Defaults to North America when unstated. */
+  region?: Region;
+  /** Practical availability note — shipping, counters, retailer reality. */
+  availability?: string;
 }
+
+export const brandRegion = (b: DeskBrand): Region => b.region ?? "North America";
 
 export const BRANDS: DeskBrand[] = [
   { name: "ILIA", family: "Skin tint", also: "Hybrid SPF", lane: "Hybrid skin tint", note: "Serum tints and multi-use sticks for second-skin kits. A strong default for sheer architecture.", best: ["Tint + SPF hybrid days", "Multi-use stick colour", "Skin-first wear"], less: ["Silicone-averse without checking current formulas"], examples: ["Super Serum Skin Tint SPF 40", "True Skin Serum Foundation", "Multi-Stick", "Limitless Lash Mascara", "Balmy Tint"], filters: ["vegan"] },
