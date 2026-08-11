@@ -31,14 +31,14 @@ export function fullPacketHtml(edit: Edit, profile: Profile, scenarios: Scenario
 
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<title>The Full Edit Packet · Makeup Intelligence</title>
+<title>The Decision Packet · Makeup Intelligence</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root { --ink:#171114; --paper:#fbf7f4; --gilt:#8a6a3a; --rouge:#8c2f3c; --muted:#6b5f5c; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.75 Georgia,'Times New Roman',serif; }
   main { max-width:52rem; margin:0 auto; padding:3.5rem 1.5rem 5rem; }
-  h1 { font-size:2.8rem; line-height:1.05; margin:.4rem 0 .6rem; font-weight:400; }
+  h1 { font-size:clamp(2.8rem,9vw,5.2rem); line-height:.94; letter-spacing:-.02em; margin:.4rem 0 .6rem; font-weight:400; }
   h2 { font-size:1.7rem; font-weight:400; margin:3rem 0 .4rem; border-top:1px solid #e2d8d2; padding-top:1.6rem; }
   h3 { font-size:1.15rem; font-weight:400; margin:1.6rem 0 .2rem; }
   .eyebrow { text-transform:uppercase; letter-spacing:.28em; font-size:.62rem; font-family:Helvetica,Arial,sans-serif; color:var(--gilt); }
@@ -55,12 +55,20 @@ export function fullPacketHtml(edit: Edit, profile: Profile, scenarios: Scenario
   .muted { color:var(--muted); }
   ul { padding-left:1.1rem; } li { margin:.25rem 0; }
   .scroll { overflow-x:auto; }
+  .decision { border:1px solid var(--gilt); border-top:4px solid var(--gilt); padding:1.6rem 1.5rem; margin:2rem 0 0; background:#fdfaf7; }
+  .decision h2 { border:0; margin:0 0 .6rem; padding:0; font-size:1.9rem; }
+  .calls { display:grid; gap:1rem; margin:1.2rem 0 0; }
+  .call { border-left:3px solid var(--rouge); padding-left:.9rem; }
+  .call .k { text-transform:uppercase; letter-spacing:.22em; font-size:.58rem; font-family:Helvetica,Arial,sans-serif; color:var(--gilt); }
+  .checklist { list-style:none; padding:0; }
+  .checklist li { padding-left:1.6rem; position:relative; }
+  .checklist li::before { content:"☐"; position:absolute; left:0; color:var(--gilt); }
   footer { margin-top:3.5rem; border-top:1px solid #e2d8d2; padding-top:1.2rem; font-size:.78rem; color:var(--muted); }
   @media print { body { background:#fff; } h2 { break-after:avoid; } table,article { break-inside:avoid; } }
 </style></head>
 <body><main>
   <p class="eyebrow">Vanity or Vice · Makeup Intelligence</p>
-  <h1>The Full Edit Packet</h1>
+  <h1>The Decision Packet</h1>
   <p class="lede">${esc(a.headline)} · pancake risk ${a.risk} / 100 · skin-like ${a.skinlike} / 100 · exported ${new Date().toLocaleString()}</p>
 
   <div class="grid">
@@ -69,6 +77,38 @@ export function fullPacketHtml(edit: Edit, profile: Profile, scenarios: Scenario
     <div class="stat"><span class="k">Morning</span><span class="v">${edit.kit.minutes} min</span></div>
     <div class="stat"><span class="k">Kit tension</span><span class="v">${edit.kit.tension} / 100</span></div>
   </div>
+
+  <section class="decision">
+    <p class="eyebrow">The decision</p>
+    <h2>${esc(a.headline)}</h2>
+    <p class="lede">${esc(a.verdict)}</p>
+    <div class="calls">
+      <div class="call"><span class="k">Build this</span> ${esc(
+        edit.pathways[0] ? `${edit.pathways[0].name} — ${edit.pathways[0].tradeoff}` : "No pathway scored.",
+      )}</div>
+      <div class="call"><span class="k">Buy in this order</span> ${esc(
+        edit.kit.items.slice(0, 4).map((i) => i.label).join(" → ") || "Nothing yet.",
+      )}</div>
+      <div class="call"><span class="k">Skip for now</span> ${esc(
+        edit.types
+          .slice()
+          .sort((x, y) => x.score - y.score)
+          .slice(0, 3)
+          .map((ty) => ty.label)
+          .join(" · "),
+      )}</div>
+      <div class="call"><span class="k">The cheapest improvement</span> ${esc(
+        edit.whatIf[0] ? `${edit.whatIf[0].label} (${edit.whatIf[0].move}) — risk would read ${edit.whatIf[0].risk}` : "None available.",
+      )}</div>
+    </div>
+    <p class="eyebrow" style="margin-top:1.4rem">Before you buy anything</p>
+    <ul class="checklist">
+      <li>Your ceiling is ${edit.kit.ceiling} objects. This kit uses ${edit.kit.items.length}. Nothing enters without something leaving.</li>
+      <li>${edit.kit.layers} films on skin is the number to defend. Coverage arrives from placement, not another layer.</li>
+      <li>Test the base in daylight on the jaw and the chest, not the wrist.</li>
+      <li>${edit.bag.replace} objects in your bag are replace-when-finished. Do not replace them early.</li>
+    </ul>
+  </section>
 
   <h2>Your inputs</h2>
   <ul>${profileLines(profile).map((l) => `<li>${esc(l)}</li>`).join("")}</ul>
