@@ -144,7 +144,44 @@ export const PRODUCTS: DeskProduct[] = [
   P("Odacité", "Serum Concentrate", "hydrating-prep", 39, "The anti-cake step that is not makeup.", ["vegan"]),
   P("Coola", "Mineral Silk Crème", "hydrating-prep", 42, "Hydrating prep with UV interest.", ["mineral", "vegan"]),
   P("La Roche-Posay", "Toleriane Sensitive Tinted Fluid", "tinted-moisturiser", 30, "Sensitive-positioned everyday tint.", ["fragranceFree"], 3),
+
+  /* ── Beyond North America. Region is availability, not a quality ranking. ── */
+  P("Laneige", "Neo Cushion Glow", "cushion-compact", 38, "Water-led cushion; one pass, and stop.", [], 8, "Korea"),
+  P("Tirtir", "Mask Fit Red Cushion", "cushion-compact", 30, "The cushion that extended its depth range properly — 30 shades.", [], 30, "Korea"),
+  P("Hera", "Black Cushion", "cushion-compact", 62, "Thin film, high polish; the touch-up habit is the risk.", [], 6, "Korea"),
+  P("Laneige", "Lip Sleeping Mask", "lip-oil", 24, "Overnight repair rather than a daytime layer.", [], 6, "Korea"),
+  P("Shiseido", "Synchro Skin Radiant Lifting Foundation SPF 30", "serum-foundation", 52, "Technical, unsentimental medium base with real UV numbers.", [], 30, "Japan"),
+  P("Shiseido", "Clear Sunscreen Stick SPF 50+", "mineral-spf", 30, "Reapply over makeup without disturbing the film.", [], 1, "Japan"),
+  P("Suqqu", "Melting Powder Blush", "powder-blush", 68, "Powder that behaves like a cream. Expensive, and it shows why.", [], 8, "Japan"),
+  P("Canmake", "Cream Cheek", "cream-blush", 8, "The cheapest credible cream colour on the desk.", [], 12, "Japan"),
+  P("Canmake", "Stay-On Balm Rouge", "tinted-balm", 9, "Pharmacy-priced balm tint that holds through lunch.", [], 14, "Japan"),
+  P("Kay Beauty", "Hydrating Foundation", "light-foundation", 22, "Built for Indian depth and olive undertone bands from the start.", ["vegan"], 26, "India"),
+  P("Kay Beauty", "Blurring Setting Powder", "setting-powder", 18, "Set two panels in heat, not the whole face.", ["vegan"], 3, "India"),
+  P("Forest Essentials", "Tinted Lip Balm", "tinted-balm", 16, "Ayurvedic prep house; lip lane only.", [], 5, "India"),
+  P("Juicy Chemistry", "Lip and Cheek Tint", "lip-cheek-balm", 14, "Short-list organic formula for reactive skin in humid heat.", ["fragranceFree", "vegan"], 4, "India"),
+  P("Zaron Cosmetics", "Fluid Foundation", "serum-foundation", 20, "Deep and red-leaning bands treated as the centre of the range.", [], 18, "West Africa"),
+  P("Zaron Cosmetics", "Sheer Tint Moisturiser", "skin-tint", 16, "Thin film built for humid heat.", [], 8, "West Africa"),
+  P("House of Tara", "Foundation Stick", "multi-stick", 24, "High pigment load — a light hand is the whole instruction.", [], 16, "West Africa"),
+  P("Huda Beauty", "Faux Filter Skin Tint", "skin-tint", 36, "Longevity-first house making a genuinely thin product.", [], 30, "Middle East"),
+  P("Huda Beauty", "Easy Blur Natural Angel Powder", "pressed-powder", 39, "Portable set; portable is the risk.", [], 4, "Middle East"),
+  P("Ghawali", "Satin Lipstick", "satin-lipstick", 28, "Heritage colour house; the lip carries the whole look.", [], 12, "Middle East"),
+  P("Quem Disse, Berenice?", "Match Base Fluid", "light-foundation", 14, "Broad depth coverage at pharmacy pricing, built for heat.", [], 20, "Brazil"),
+  P("Océane", "Lip Tint", "lip-stain", 12, "Stains rather than sits — survives a humid afternoon.", [], 8, "Brazil"),
+  P("Natura", "Una Liquid Foundation", "serum-foundation", 26, "Biodiversity-sourced botanical base with real availability.", ["vegan"], 24, "Brazil"),
+  P("Vive Cosmetics", "Liquid Lipstick", "lip-stain", 18, "Lip-led finish with no complexion cost.", ["vegan"], 14, "Latin America"),
+  P("Trinny London", "BFF Skin Tint SPF 30", "skin-tint", 46, "Stackable pots designed around a ceiling.", [], 12, "United Kingdom"),
+  P("Trinny London", "Lip2Cheek", "lip-cheek-balm", 34, "Two jobs, one pot, built for a zip case.", [], 20, "United Kingdom"),
+  P("Lisa Eldridge Beauty", "Elevated Glow", "cream-highlighter", 42, "One lit plane, chosen by a working artist.", [], 6, "United Kingdom"),
+  P("Dr. Hauschka", "Tinted Day Cream", "tinted-moisturiser", 42, "Biodynamic, sheer by temperament.", ["fragranceFree"], 3, "Europe"),
+  P("Lavera", "Natural Liquid Foundation", "light-foundation", 18, "Certified natural at EU pharmacy pricing.", ["mineral", "vegan"], 8, "Europe"),
+  P("Kiko Milano", "Unlimited Stylo Eye Pencil", "eyeliner-pencil", 12, "Cheap, competent, European high street.", [], 12, "Europe"),
+  P("Frank Body", "Cheek Tint", "liquid-blush", 20, "Plainspoken colour with no ceremony attached.", ["vegan"], 4, "Australia"),
+  P("INIKA Organic", "Certified Organic Perfection Concealer", "strategic-concealer", 34, "Organic spot work from the Australian mineral lane.", ["mineral", "vegan"], 6, "Australia"),
 ];
+
+export const productRegion = (p: DeskProduct): Region => p.region ?? "North America";
+
+export const PRODUCT_REGIONS: Region[] = [...new Set(PRODUCTS.map(productRegion))].sort() as Region[];
 
 export const PRODUCT_BRANDS = [...new Set(PRODUCTS.map((p) => p.brand))].sort();
 
@@ -159,6 +196,7 @@ export interface ProductQuery {
   q?: string | undefined;
   lanes?: string[] | undefined;
   brands?: string[] | undefined;
+  regions?: string[] | undefined;
   band?: string | undefined;
   filters?: FilterKey[] | undefined;
   maxLayer?: number | undefined;
@@ -176,6 +214,7 @@ export function searchProducts(query: ProductQuery): DeskProduct[] {
     if (terms.some((term) => !haystack.includes(term))) return false;
     if (query.lanes?.length && !query.lanes.includes(t?.lane ?? "")) return false;
     if (query.brands?.length && !query.brands.includes(p.brand)) return false;
+    if (query.regions?.length && !query.regions.includes(productRegion(p))) return false;
     if (query.band) {
       const band = PRICE_BANDS.find((b) => b.id === query.band);
       if (band && !band.test(p.price)) return false;
