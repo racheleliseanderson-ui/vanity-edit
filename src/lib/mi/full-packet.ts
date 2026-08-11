@@ -106,7 +106,9 @@ export function fullPacketHtml(edit: Edit, profile: Profile, scenarios: Scenario
       <li>Your ceiling is ${edit.kit.ceiling} objects. This kit uses ${edit.kit.items.length}. Nothing enters without something leaving.</li>
       <li>${edit.kit.layers} films on skin is the number to defend. Coverage arrives from placement, not another layer.</li>
       <li>Test the base in daylight on the jaw and the chest, not the wrist.</li>
-      <li>${edit.bag.replace} objects in your bag are replace-when-finished. Do not replace them early.</li>
+      <li>${
+        edit.bag.filter((b) => b.verdict === "replace").length
+      } objects in your bag are replace-when-finished. Do not replace them early.</li>
     </ul>
   </section>
 
