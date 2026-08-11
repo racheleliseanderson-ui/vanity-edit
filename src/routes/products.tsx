@@ -295,6 +295,7 @@ function ProductsRoute() {
                 </div>
 
                 <p className="eyebrow mt-7">Product type</p>
+                <p className="sr-only">Region facet follows the type selector.</p>
                 <select
                   value={typeId}
                   onChange={(e) => patch({ type: e.target.value || undefined })}
