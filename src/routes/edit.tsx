@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Page } from "@/components/mi/chrome";
+import { RunConsole, type PipelineState } from "@/components/mi/run-console";
 import { Carousel, ConfirmButton, Sheet, useSwipe } from "@/components/mi/touch";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
@@ -10,13 +11,15 @@ import {
   GOALS,
   PRESETS,
   TYPE_MAP,
+  UNDERTONES,
 } from "@/lib/mi/catalog";
-import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit } from "@/lib/mi/engine";
+import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit, runEditTimed } from "@/lib/mi/engine";
 import { downloadComparePacket } from "@/lib/mi/compare-packet";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { useI18n } from "@/lib/mi/i18n";
 import { matchKit } from "@/lib/mi/match";
 import { PRODUCTS } from "@/lib/mi/products";
+import type { SavedRun } from "@/lib/mi/runs";
 import {
   duplicateScenarioSet,
   importScenarioSet,
@@ -28,7 +31,7 @@ import {
   saveScenarioSet,
   type ScenarioSet,
 } from "@/lib/mi/scenario-sets";
-import type { Budget, Climate, FilterKey, Profile, SkinType, Undertone } from "@/lib/mi/types";
+import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 
 export const Route = createFileRoute("/edit")({
   validateSearch: (
@@ -62,7 +65,6 @@ type Stage = (typeof STAGES)[number];
 const SKINS: SkinType[] = ["dry", "normal", "combination", "oily"];
 const CLIMATES: Climate[] = ["humid", "temperate", "dry", "altitude"];
 const BUDGETS: Budget[] = ["lean", "mid", "open"];
-const UNDERTONES: Undertone[] = ["cool", "neutral", "warm"];
 const LEVEL = ["None", "Some", "A lot", "Constantly"];
 
 function toggle<T>(arr: T[], v: T) {
@@ -92,7 +94,15 @@ function EditRoute() {
   };
   const [activePreset, setActivePreset] = useState<string | undefined>(path);
 
-  const edit = useMemo(() => runEdit(profile), [profile]);
+  /* Pipeline run management: `committed` is what the engine has actually scored. */
+  const [held, setHeld] = useState(false);
+  const [committed, setCommitted] = useState<Profile>(profile);
+  useEffect(() => {
+    if (!held) setCommitted(profile);
+  }, [held, profile]);
+  const { edit, timings } = useMemo(() => runEditTimed(committed), [committed]);
+  const stale = committed !== profile;
+  const pipelineState: PipelineState = stale ? "stale" : held ? "held" : "done";
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
@@ -108,9 +118,9 @@ function EditRoute() {
       });
       return value;
     });
-  const offers = useMemo(() => availableMoves(profile), [profile]);
+  const offers = useMemo(() => availableMoves(committed), [committed]);
   const live = useMemo(() => moves.filter((m) => offers.some((o) => o.id === m)), [moves, offers]);
-  const columns = useMemo(() => compareScenarios(profile, live), [profile, live]);
+  const columns = useMemo(() => compareScenarios(committed, live), [committed, live]);
   const baseline = columns[0];
 
   /* Saved scenario sets — local to this browser. */
@@ -126,10 +136,26 @@ function EditRoute() {
       live
         .map((id) => SCENARIO_MOVES.find((m) => m.id === id))
         .filter((m): m is (typeof SCENARIO_MOVES)[number] => Boolean(m))
-        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(profile), note: m.note })),
-    [live, profile],
+        .map((m) => ({ id: m.id, label: m.label, move: m.moveLabel(committed), note: m.note })),
+    [live, committed],
   );
-  const exportCompare = () => downloadComparePacket(edit, profile, columns, moveDefs, loadedSet);
+  const exportCompare = () => downloadComparePacket(edit, committed, columns, moveDefs, loadedSet);
+
+  /** Reset to the current smart path's defaults, or the house default. */
+  const resetRun = () => {
+    const preset = PRESETS.find((p) => p.id === activePreset);
+    const next: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    setProfile(next);
+    setCommitted(next);
+  };
+
+  const loadRun = (run: SavedRun) => {
+    setProfile(run.profile);
+    setCommitted(run.profile);
+    setActivePreset(run.path);
+    setMoves(run.moves);
+    if (STAGES.includes(run.stage as Stage)) setStage(run.stage as Stage);
+  };
 
   /** Apply one costed move straight into the live profile. */
   const applyMove = (id: string) => {
@@ -164,7 +190,7 @@ function EditRoute() {
   const [previousProfile, setPreviousProfile] = useState<Profile | null>(null);
   const addToBag = (ids: string[]) =>
     setProfile((p) => ({ ...p, bag: [...new Set([...p.bag, ...ids.filter((id) => TYPE_MAP[id])])] }));
-  const matched = useMemo(() => matchKit(profile, edit.kit.items), [profile, edit.kit.items]);
+  const matched = useMemo(() => matchKit(committed, edit.kit.items), [committed, edit.kit.items]);
   const [pathA, setPathA] = useState<string | null>(null);
   const [pathB, setPathB] = useState<string | null>(null);
   const onTabKey = (e: React.KeyboardEvent, i: number) => {
@@ -185,20 +211,27 @@ function EditRoute() {
   return (
     <Page>
       {/* Preset rail + live instrument */}
-      <section className="border-b border-border bg-card/30">
-        <div className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="eyebrow">Step into the edit</p>
-              <h1 className="display mt-3 text-4xl md:text-6xl">
-                Your <span className="gilt-text italic">personal edit</span>
+      <section className="field-oxblood border-b border-border">
+        <div className="mx-auto max-w-[1400px] px-5 py-14 md:px-10 md:py-20">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-end">
+            <div className="min-w-0">
+              <p className="eyebrow">Step into the edit · Fifth Avenue, ground floor</p>
+              <h1 className="marquee mt-4">
+                The<br />
+                <span className="gilt-text italic">Edit</span>
               </h1>
-              <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground">
-                Start from a smart path — each one is already costed for pancake risk, objects and minutes — then revise
-                every field underneath it.
-              </p>
+              <div className="rule-heavy mt-8 max-w-xl pt-5">
+                <p className="engine-type text-[0.62rem] uppercase text-champagne">
+                  risk {edit.architecture.risk} · skin-like {edit.architecture.skinlike} · {edit.kit.layers} films ·{" "}
+                  {edit.kit.minutes} min
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  Start from a smart path — each one already costed for pancake risk, objects and minutes — then revise
+                  every field underneath it. Nothing here flatters you. It scores you.
+                </p>
+              </div>
             </div>
-            <div className="panel p-7">
+            <div className="vitrine p-7 md:p-9">
               <RiskDial arch={edit.architecture} />
               <div className="mt-6">
                 <Spectrum value={edit.architecture.risk} />
@@ -386,13 +419,16 @@ function EditRoute() {
           </Group>
 
           <Group title={tr("edit.shade")} note="Used for shade families only — never an exact match promise.">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {UNDERTONES.map((u) => (
-                <Chip key={u} active={profile.undertone === u} onClick={() => set({ undertone: u })}>
-                  <span className="capitalize">{u}</span>
+                <Chip key={u.id} active={profile.undertone === u.id} onClick={() => set({ undertone: u.id })}>
+                  <span title={u.note}>{u.label}</span>
                 </Chip>
               ))}
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              {UNDERTONES.find((u) => u.id === profile.undertone)?.note}
+            </p>
             <Slider
               label="Depth"
               hint={["porcelain", "fair", "light", "light-medium", "medium", "medium-tan", "tan", "deep-tan", "deep", "rich deep"][profile.depth - 1] ?? "medium"}
@@ -1126,10 +1162,10 @@ function EditRoute() {
             <Section title="The edit packet" lead="Print or save as PDF. Yours to take to the counter.">
               <div className="no-print mb-10 flex flex-wrap gap-3">
                 <button
-                  onClick={() => downloadFullPacket(edit, profile, columns)}
+                  onClick={() => downloadFullPacket(edit, committed, columns)}
                   className="inline-flex border border-champagne bg-champagne/10 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground"
                 >
-                  Export the full packet
+                  Export the decision packet
                 </button>
                 <button
                   onClick={exportCompare}
@@ -1145,7 +1181,7 @@ function EditRoute() {
                 </button>
               </div>
               <p className="no-print mb-10 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                The full packet is a single self-contained file: your inputs, the architecture ledger, every scored
+                The decision packet is a single self-contained file: the call itself, then your inputs, the architecture ledger, every scored
                 product type, all nine pathways, tools, bag calls, coaching, the costed single moves and the{" "}
                 {columns.length} scenario{columns.length === 1 ? "" : "s"} you have lined up — with named formulas and
                 prices beside each kit object. Open it anywhere, or print it to PDF.
@@ -1243,6 +1279,20 @@ function EditRoute() {
               </div>
             </Section>
           )}
+
+          <RunConsole
+            profile={profile}
+            path={activePreset}
+            moves={live}
+            stage={stage}
+            timings={timings}
+            state={pipelineState}
+            held={held}
+            onToggleHold={() => setHeld((h) => !h)}
+            onRun={() => setCommitted(profile)}
+            onReset={resetRun}
+            onLoad={loadRun}
+          />
           </div>
         </div>
       </div>

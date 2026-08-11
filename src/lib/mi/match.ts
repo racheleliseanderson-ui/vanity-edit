@@ -35,8 +35,16 @@ export function shadeFamily(p: Profile, product: DeskProduct): string | undefine
   const shaded = ["base", "spot"].includes(t.lane) || product.typeId === "brow-pencil";
   if (!shaded) return undefined;
   const family = DEPTH_FAMILY[Math.min(9, Math.max(0, p.depth - 1))] ?? "medium";
-  const lean =
-    p.undertone === "cool" ? "cool or rosy side" : p.undertone === "warm" ? "warm or golden side" : "neutral side";
+  const LEAN: Record<string, string> = {
+    cool: "cool or rosy side",
+    neutral: "neutral side",
+    warm: "warm or golden side",
+    olive: "olive or green-grey side — most ranges over-correct this into pink",
+    "golden-olive": "golden-olive side, between yellow and green",
+    "deep-neutral": "deep neutral side, avoiding anything ashy",
+    "red-leaning": "red or mahogany side, not orange-yellow",
+  };
+  const lean = LEAN[p.undertone] ?? "neutral side";
   const range = product.shades && product.shades >= 20 ? "the range is wide enough to split hairs" : "the range is short, so expect to blend";
   return `Look in the ${family} band, ${lean} — ${range}.`;
 }

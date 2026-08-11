@@ -14,6 +14,7 @@
   --radius-sm: calc(var(--radius) - 4px);
   --font-display: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   --color-porcelain: var(--porcelain);
   --color-porcelain-foreground: var(--porcelain-foreground);
   --color-champagne: var(--champagne);
@@ -308,6 +309,78 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* ── Fifth Avenue: vitrine frames, marquee numerals, foil sweep, colour fields ── */
+
+@utility vitrine {
+  background: linear-gradient(155deg, var(--panel-a), var(--panel-b));
+  border: 1px solid var(--hairline);
+  box-shadow:
+    inset 0 0 0 1px oklch(0.98 0.01 80 / 6%),
+    var(--shadow-lux);
+  position: relative;
+}
+
+@utility marquee {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.04em;
+  line-height: 0.82;
+  font-size: clamp(4rem, 16vw, 12rem);
+}
+
+@utility engine-type {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+@utility field-oxblood {
+  background:
+    radial-gradient(120% 90% at 12% 0%, oklch(0.42 0.13 12 / 55%) 0%, transparent 62%),
+    linear-gradient(170deg, var(--oxblood), var(--background) 78%);
+}
+
+@utility field-gilt {
+  background:
+    radial-gradient(90% 80% at 88% 8%, oklch(0.83 0.085 82 / 22%) 0%, transparent 60%),
+    linear-gradient(190deg, var(--card), var(--background) 70%);
+}
+
+@utility foil {
+  position: relative;
+  overflow: hidden;
+}
+
+@utility foil-sweep {
+  position: relative;
+  overflow: hidden;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, oklch(0.98 0.01 80 / 22%) 48%, transparent 76%);
+    transform: translateX(-120%);
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+  &:hover::after,
+  &:focus-visible::after {
+    transform: translateX(120%);
+  }
+}
+
+@utility rule-heavy {
+  border-top: 3px solid var(--champagne);
+}
+
+.calm-motion *,
+.calm-motion *::before,
+.calm-motion *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
 }
 
 @utility rise {

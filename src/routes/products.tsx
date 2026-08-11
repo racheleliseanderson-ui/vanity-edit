@@ -18,6 +18,7 @@ import {
   loosenSuggestion,
   rankProducts,
   rememberSearch,
+  PRODUCT_REGIONS,
   type ProductQuery,
   type SortKey,
 } from "@/lib/mi/products";
@@ -27,6 +28,7 @@ interface ProductSearch {
   q?: string | undefined;
   lanes?: string | undefined;
   brands?: string | undefined;
+  regions?: string | undefined;
   band?: string | undefined;
   filters?: string | undefined;
   thin?: boolean | undefined;
@@ -45,7 +47,7 @@ const num = (v: unknown) => {
 export const Route = createFileRoute("/products")({
   validateSearch: (s: Record<string, unknown>): ProductSearch => {
     const out: ProductSearch = {};
-    for (const k of ["q", "lanes", "brands", "band", "filters", "sort", "type"] as const) {
+    for (const k of ["q", "lanes", "brands", "regions", "band", "filters", "sort", "type"] as const) {
       const v = str(s[k]);
       if (v) out[k] = v;
     }
@@ -115,6 +117,10 @@ function ProductsRoute() {
         : [],
     [search.filters],
   );
+  const regions = useMemo(
+    () => (search.regions ? search.regions.split(",").filter((r: string) => PRODUCT_REGIONS.includes(r as never)) : []),
+    [search.regions],
+  );
 
   const [bagged, setBagged] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
@@ -142,6 +148,7 @@ function ProductsRoute() {
       q,
       lanes: lanes.length ? lanes : undefined,
       brands: brands.length ? brands : undefined,
+      regions: regions.length ? regions : undefined,
       band: band || undefined,
       typeId: typeId || undefined,
       filters,
@@ -149,7 +156,7 @@ function ProductsRoute() {
       maxPrice: search.max,
       ...(thinOnly ? { maxLayer: 1 } : {}),
     }),
-    [q, lanes, brands, band, typeId, filters, thinOnly, search.min, search.max],
+    [q, lanes, brands, regions, band, typeId, filters, thinOnly, search.min, search.max],
   );
 
   const results = useMemo(() => rankProducts(query, sort), [query, sort]);
@@ -157,6 +164,7 @@ function ProductsRoute() {
   const loosen = useMemo(() => (results.length === 0 ? loosenSuggestion(query) : null), [results.length, query]);
   const closest = useMemo(() => (results.length === 0 ? closestResults(query, sort) : []), [results.length, query, sort]);
   const laneCounts = useMemo(() => facetCounts(query, "lanes", [...LANES]), [query]);
+  const regionCounts = useMemo(() => facetCounts(query, "regions", [...PRODUCT_REGIONS]), [query]);
   const filterCounts = useMemo(
     () => facetCounts({ ...query, filters: filters as unknown as string[] } as ProductQuery, "filters", FILTERS.map((f) => f.id)),
     [query, filters],
@@ -170,6 +178,10 @@ function ProductsRoute() {
     ...(q ? [{ label: `“${q}”`, clear: () => patch({ q: undefined }) }] : []),
     ...lanes.map((l: string) => ({ label: l, clear: () => patch({ lanes: lanes.filter((x: string) => x !== l).join(",") || undefined }) })),
     ...brands.map((b: string) => ({ label: b, clear: () => patch({ brands: brands.filter((x: string) => x !== b).join(",") || undefined }) })),
+    ...regions.map((r: string) => ({
+      label: r,
+      clear: () => patch({ regions: regions.filter((x: string) => x !== r).join(",") || undefined }),
+    })),
     ...(band ? [{ label: PRICE_BANDS.find((b) => b.id === band)?.label ?? band, clear: () => patch({ band: undefined }) }] : []),
     ...(search.min !== undefined || search.max !== undefined
       ? [{ label: `$${search.min ?? PRICE_EXTENT.min}–$${search.max ?? PRICE_EXTENT.max}`, clear: () => patch({ min: undefined, max: undefined }) }]
@@ -277,6 +289,36 @@ function ProductsRoute() {
                         }`}
                       >
                         {l} <span className="opacity-60">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="eyebrow mt-7">Where it is sold</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  Region is availability, not a quality ranking.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PRODUCT_REGIONS.map((r) => {
+                    const on = regions.includes(r);
+                    const count = regionCounts[r] ?? 0;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() =>
+                          patch({
+                            regions: (on ? regions.filter((x: string) => x !== r) : [...regions, r]).join(",") || undefined,
+                          })
+                        }
+                        aria-pressed={on}
+                        disabled={!on && count === 0}
+                        className={`tap border px-4 text-[0.62rem] tracking-[0.2em] uppercase transition-colors disabled:opacity-30 ${
+                          on
+                            ? "border-champagne bg-champagne/10 text-champagne"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {r} <span className="opacity-60">{count}</span>
                       </button>
                     );
                   })}
