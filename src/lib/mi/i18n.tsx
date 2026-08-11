@@ -432,9 +432,17 @@ interface I18nCtx {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: (key: Key) => string;
+  rtl: boolean;
 }
 
-const Ctx = createContext<I18nCtx>({ locale: "en", setLocale: () => {}, t: (k) => EN[k] });
+const Ctx = createContext<I18nCtx>({ locale: "en", setLocale: () => {}, t: (k) => EN[k], rtl: false });
+
+const isLocale = (v: unknown): v is Locale => LOCALES.some((l) => l.id === v);
+
+function applyLocale(l: Locale) {
+  document.documentElement.lang = l === "pt" ? "pt-BR" : l;
+  document.documentElement.dir = isRtl(l) ? "rtl" : "ltr";
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("en");
@@ -442,9 +450,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(KEY);
-      if (stored === "fr" || stored === "es" || stored === "en") {
+      if (isLocale(stored)) {
         setLocaleState(stored);
-        document.documentElement.lang = stored;
+        applyLocale(stored);
       }
     } catch {
       /* storage unavailable */
@@ -453,7 +461,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    document.documentElement.lang = l;
+    applyLocale(l);
     try {
       window.localStorage.setItem(KEY, l);
     } catch {
@@ -462,7 +470,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<I18nCtx>(
-    () => ({ locale, setLocale, t: (key: Key) => DICTS[locale][key] ?? EN[key] }),
+    () => ({ locale, setLocale, rtl: isRtl(locale), t: (key: Key) => DICTS[locale][key] ?? EN[key] }),
     [locale, setLocale],
   );
 
