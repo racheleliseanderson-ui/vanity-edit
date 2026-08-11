@@ -27,6 +27,7 @@ interface ProductSearch {
   q?: string | undefined;
   lanes?: string | undefined;
   brands?: string | undefined;
+  regions?: string | undefined;
   band?: string | undefined;
   filters?: string | undefined;
   thin?: boolean | undefined;
@@ -45,7 +46,7 @@ const num = (v: unknown) => {
 export const Route = createFileRoute("/products")({
   validateSearch: (s: Record<string, unknown>): ProductSearch => {
     const out: ProductSearch = {};
-    for (const k of ["q", "lanes", "brands", "band", "filters", "sort", "type"] as const) {
+    for (const k of ["q", "lanes", "brands", "regions", "band", "filters", "sort", "type"] as const) {
       const v = str(s[k]);
       if (v) out[k] = v;
     }
