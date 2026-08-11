@@ -1,4 +1,29 @@
-import type { FilterKey, Profile } from "./types";
+import type { FilterKey, Profile, Region, Undertone } from "./types";
+
+/** Undertone is used for shade families and warmth direction only — never a claim about who a formula is "for". */
+export const UNDERTONES: { id: Undertone; label: string; note: string }[] = [
+  { id: "cool", label: "Cool", note: "Rose or blue-leaning. Veins read blue; silver sits easily." },
+  { id: "neutral", label: "Neutral", note: "No dominant lean. Most short shade ranges are built here." },
+  { id: "warm", label: "Warm", note: "Golden or peach-leaning. Gold sits easily." },
+  { id: "olive", label: "Olive", note: "Green-grey cast that most bases over-correct into pink." },
+  { id: "golden-olive", label: "Golden olive", note: "Olive with warmth on top — sits between yellow and green." },
+  { id: "deep-neutral", label: "Deep neutral", note: "Depth without a strong lean; ashiness is the failure mode." },
+  { id: "red-leaning", label: "Red-leaning", note: "Red or mahogany cast; orange-yellow bases turn grey on it." },
+];
+
+export const REGIONS: Region[] = [
+  "North America",
+  "United Kingdom",
+  "Europe",
+  "Korea",
+  "Japan",
+  "India",
+  "West Africa",
+  "Middle East",
+  "Brazil",
+  "Latin America",
+  "Australia",
+];
 
 export const GOALS: { id: string; label: string; note: string }[] = [
   { id: "escape-pancake", label: "Escape pancake makeup", note: "Skin-like finish over mask-like layers." },
