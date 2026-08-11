@@ -18,6 +18,7 @@ import {
   loosenSuggestion,
   rankProducts,
   rememberSearch,
+  PRODUCT_REGIONS,
   type ProductQuery,
   type SortKey,
 } from "@/lib/mi/products";
