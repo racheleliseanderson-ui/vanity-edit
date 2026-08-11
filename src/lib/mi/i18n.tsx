@@ -1,12 +1,21 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-export type Locale = "en" | "fr" | "es";
+export type Locale = "en" | "fr" | "es" | "de" | "it" | "pt" | "ja" | "ko" | "zh" | "ar";
 
-export const LOCALES: { id: Locale; label: string; native: string }[] = [
+export const LOCALES: { id: Locale; label: string; native: string; rtl?: boolean }[] = [
   { id: "en", label: "English", native: "English" },
   { id: "fr", label: "French", native: "Français" },
   { id: "es", label: "Spanish", native: "Español" },
+  { id: "de", label: "German", native: "Deutsch" },
+  { id: "it", label: "Italian", native: "Italiano" },
+  { id: "pt", label: "Portuguese (Brazil)", native: "Português" },
+  { id: "ja", label: "Japanese", native: "日本語" },
+  { id: "ko", label: "Korean", native: "한국어" },
+  { id: "zh", label: "Chinese", native: "中文" },
+  { id: "ar", label: "Arabic", native: "العربية", rtl: true },
 ];
+
+export const isRtl = (l: Locale) => LOCALES.find((x) => x.id === l)?.rtl === true;
 
 /** UI chrome only. Editorial essays, brand notes and engine reasoning stay in English. */
 const EN = {
@@ -92,6 +101,26 @@ const EN = {
   "sets.copyLink": "Copy link",
   "sets.import": "Import from a link",
   "sets.manage": "Manage sets",
+
+  "run.title": "Pipeline runs",
+  "run.run": "Run",
+  "run.rerun": "Re-run",
+  "run.hold": "Hold live update",
+  "run.holding": "Holding — inputs are queued",
+  "run.reset": "Reset to path defaults",
+  "run.revert": "Revert to last saved run",
+  "run.save": "Save this run",
+  "run.name": "Name this run",
+  "run.load": "Load",
+  "run.diff": "Diff",
+  "run.history": "Run history",
+  "run.none": "No runs saved in this browser yet.",
+  "run.stale": "Inputs changed since this ran",
+  "run.status": "Pipeline status",
+  "run.idle": "idle",
+  "run.done": "done",
+  "run.identical": "These two runs have identical inputs.",
+  "region.label": "Region",
 } as const;
 
 export type Key = keyof typeof EN;
