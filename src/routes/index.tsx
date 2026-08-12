@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
+          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, wear & longevity forecast, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
       },
       { property: "og:title", content: "Makeup Intelligence · Vanity or Vice" },
       {
@@ -30,7 +30,8 @@ const ENGINES = [
   { k: "III", t: "Tool Match", b: "Essential, optional, probably unnecessary — derived from the kit you actually earned. Fingers count." },
   { k: "IV", t: "Bag Edit", b: "Keep, use differently, replace when finished. No purge culture, ever." },
   { k: "V", t: "Build My Kit", b: "A complexity ceiling that refuses to be filled just because slots exist." },
-  { k: "VI", t: "Claim literacy", b: "SPF, treatment, hybrid and barrier claims on makeup — named, dosed, tested, and when not to buy." },
+  { k: "VI", t: "Wear & Longevity", b: "Will this face hold up over the day? Hour-by-hour integrity, failure modes, and Veil / Edit / Editorial pathways scored for your climate, hours and maintenance honesty." },
+  { k: "VII", t: "Claim literacy", b: "SPF, treatment, hybrid and barrier claims on makeup — named, dosed, tested, and when not to buy." },
 ];
 
 function Index() {
@@ -56,7 +57,7 @@ function Index() {
           <p className="rise mt-8 max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
             Product <em className="italic text-foreground">types</em> — not brands — matched to your skin, goals,
             lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. Alternative pathways
-            with their trade-offs out loud. Claim literacy for makeup that dresses as skincare. Architecture over cake.
+            with their trade-offs out loud. Wear forecast for the hours you actually live. Claim literacy for makeup that dresses as skincare. Architecture over cake.
           </p>
           <div className="rise mt-10 flex flex-wrap items-center gap-4">
             <Link
@@ -65,6 +66,13 @@ function Index() {
             >
               Begin the edit
               <span className="transition-transform group-hover:translate-x-1">→</span>
+            </Link>
+            <Link
+              to="/edit"
+              search={{ stage: "Wear" }}
+              className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground"
+            >
+              Wear & Longevity
             </Link>
             <Link to="/desk" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
               The desk
@@ -160,7 +168,7 @@ function Index() {
         <img src={still} alt="Dark editorial still life of cream pigment, a gold compact and a spent blotting paper" loading="lazy" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-background/72" />
         <div className="relative mx-auto max-w-[1400px] px-5 py-24 md:px-10">
-          <p className="eyebrow">Six engines · one profile</p>
+          <p className="eyebrow">Seven engines · one profile</p>
           <p className="display mt-5 max-w-2xl text-4xl md:text-6xl">
             Every answer explains<br />
             <span className="gilt-text italic">why it scored that way</span>

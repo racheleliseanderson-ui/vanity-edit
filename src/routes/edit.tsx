@@ -42,6 +42,8 @@ import {
   type ScenarioSet,
 } from "@/lib/mi/scenario-sets";
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
+import { WearStage } from "@/components/mi/wear-stage";
+import { WEAR_PRESETS, defaultWearDay, runWear, type WearDay } from "@/lib/mi/wear";
 
 export const Route = createFileRoute("/edit")({
   validateSearch: (
@@ -60,7 +62,7 @@ export const Route = createFileRoute("/edit")({
       {
         name: "description",
         content:
-          "Adjust skin, goals, lifestyle, maintenance tolerance and desire — and watch pancake risk, pathways, tools, bag calls and your kit rescore live.",
+          "Adjust skin, goals, lifestyle, maintenance tolerance and desire — and watch pancake risk, pathways, wear forecast, tools, bag calls and your kit rescore live.",
       },
       { property: "og:title", content: "The Edit · Makeup Intelligence" },
       { property: "og:description", content: "Live pancake-risk and architecture scoring." },
@@ -69,13 +71,14 @@ export const Route = createFileRoute("/edit")({
   component: EditRoute,
 });
 
-const STAGES = ["Match", "Compare", "Alternatives", "Tools", "Bag", "Kit", "Packet"] as const;
+const STAGES = ["Match", "Compare", "Alternatives", "Wear", "Tools", "Bag", "Kit", "Packet"] as const;
 type Stage = (typeof STAGES)[number];
 
 const SKINS: SkinType[] = ["dry", "normal", "combination", "oily"];
 const CLIMATES: Climate[] = ["humid", "temperate", "dry", "altitude"];
 const BUDGETS: Budget[] = ["lean", "mid", "open"];
 const LEVEL = ["None", "Some", "A lot", "Constantly"];
+
 
 function toggle<T>(arr: T[], v: T) {
   return arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
@@ -116,6 +119,16 @@ function EditRoute() {
   const set = (patch: Partial<Profile>) => setProfile((p) => ({ ...p, ...patch }));
   const [openType, setOpenType] = useState<string | null>(null);
   const [openPath, setOpenPath] = useState<string | null>(null);
+  const [wearDay, setWearDay] = useState<WearDay>(() => defaultWearDay(profile));
+  const [wearPreset, setWearPreset] = useState<string | undefined>();
+  const setWear = (patch: Partial<WearDay>) => {
+    setWearDay((d) => ({ ...d, ...patch }));
+    setWearPreset(undefined);
+  };
+  useEffect(() => {
+    setWearDay((d) => ({ ...d, owned: committed.bag }));
+  }, [committed.bag]);
+  const wear = useMemo(() => runWear(wearDay), [wearDay]);
   const [moves, setMovesState] = useState<string[]>(() =>
     search.moves ? search.moves.split(",").filter((m: string) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
   );
@@ -157,6 +170,8 @@ function EditRoute() {
     const next: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
     setProfile(next);
     setCommitted(next);
+    setWearDay(defaultWearDay(next));
+    setWearPreset(undefined);
   };
 
   const loadRun = (run: SavedRun) => {
@@ -164,6 +179,8 @@ function EditRoute() {
     setCommitted(run.profile);
     setActivePreset(run.path);
     setMoves(run.moves);
+    setWearDay(defaultWearDay(run.profile));
+    setWearPreset(undefined);
     if (STAGES.includes(run.stage as Stage)) setStage(run.stage as Stage);
   };
 
@@ -307,7 +324,10 @@ function EditRoute() {
                       onClick={() => {
                         setPreviousProfile(profile);
                         setActivePreset(p.id);
-                        setProfile({ ...DEFAULT_PROFILE, ...p.profile });
+                        const next = { ...DEFAULT_PROFILE, ...p.profile };
+                        setProfile(next);
+                        setWearDay(defaultWearDay(next));
+                        setWearPreset(undefined);
                       }}
                       className={`tap mt-auto w-full border px-4 text-[0.6rem] tracking-[0.24em] uppercase transition-colors ${
                         on ? "border-champagne bg-champagne/15 text-champagne" : "border-champagne/50 text-champagne hover:bg-champagne/10"
@@ -1102,6 +1122,25 @@ function EditRoute() {
                 ))}
               </div>
             </Section>
+          )}
+
+          {stage === "Wear" && (
+            <WearStage
+              wear={wear}
+              wearDay={wearDay}
+              wearPreset={wearPreset}
+              setWear={setWear}
+              onSeedFromProfile={() => {
+                setWearDay(defaultWearDay(committed));
+                setWearPreset(undefined);
+              }}
+              onApplyPreset={(id) => {
+                const p = WEAR_PRESETS.find((x) => x.id === id);
+                if (!p) return;
+                setWearDay((d) => ({ ...defaultWearDay(committed), ...p.day, owned: d.owned }));
+                setWearPreset(id);
+              }}
+            />
           )}
 
           {stage === "Tools" && (
