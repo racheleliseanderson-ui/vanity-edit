@@ -44,6 +44,8 @@ export function RunConsole({
   const [b, setB] = useState<string | null>(null);
 
   useEffect(() => setRuns(loadRuns()), []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const total = useMemo(() => Math.round(timings.reduce((n, s) => n + s.ms, 0) * 100) / 100, [timings]);
   const diff = useMemo(() => {
@@ -53,7 +55,13 @@ export function RunConsole({
   }, [a, b, runs]);
 
   const stateLabel =
-    state === "held" ? t("run.holding") : state === "stale" ? t("run.stale") : `${t("run.done")} · ${total} ms`;
+    state === "held"
+      ? t("run.holding")
+      : state === "stale"
+        ? t("run.stale")
+        : mounted
+          ? `${t("run.done")} · ${total} ms`
+          : t("run.done");
 
   return (
     <section className="no-print vitrine mt-10 p-6 md:p-8" aria-label={t("run.title")}>
@@ -97,7 +105,7 @@ export function RunConsole({
               {state === "done" ? t("run.done") : state === "held" ? t("run.idle") : t("run.stale")}
             </p>
             <p className="mt-1 truncate text-sm">{s.label}</p>
-            <p className="font-mono text-[0.62rem] tabular-nums text-champagne">{s.ms} ms</p>
+            <p className="font-mono text-[0.62rem] tabular-nums text-champagne">{mounted ? `${s.ms} ms` : "—"}</p>
           </li>
         ))}
       </ul>

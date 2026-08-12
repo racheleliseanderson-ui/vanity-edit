@@ -10,6 +10,9 @@ export type Undertone =
   | "deep-neutral"
   | "red-leaning";
 
+/** Price tier — positioning and access, never a quality ranking. */
+export type PriceTier = "drugstore" | "mid" | "prestige" | "luxury";
+
 /** Where a house or formula is actually easy to buy. Not a claim about origin quality. */
 export type Region =
   | "North America"
@@ -56,14 +59,32 @@ export interface Contribution {
   label: string;
   delta: number;
   note: string;
+  /** Optional weight/formula line for transparent reasoning. */
+  weight?: string;
+}
+
+/** Documented variable behind pancake-risk or finish scoring. */
+export interface ScoreVariable {
+  id: string;
+  label: string;
+  /** Human-readable weight / coefficient. */
+  weight: string;
+  /** What a positive delta means for pancake risk. */
+  raisesRiskWhen: string;
+  /** What a negative delta means for pancake risk. */
+  lowersRiskWhen: string;
+  /** How this also drives the finish (skin-like) score. */
+  finishEffect: string;
 }
 
 export interface Architecture {
   risk: number; // 0-100 pancake risk
-  skinlike: number; // 0-100
+  skinlike: number; // 0-100 finish / skin-like
   headline: string;
   verdict: string;
   contributions: Contribution[];
+  /** Base constant before variable deltas (always 30 in the live model). */
+  baseRisk: number;
 }
 
 export interface TypeScore {
@@ -165,4 +186,23 @@ export interface Edit {
   kit: Kit;
   coach: { title: string; body: string }[];
   whatIf: WhatIf[];
+}
+
+/** Claim-literacy card for makeup that carries skincare language. */
+export type ClaimKind = "spf" | "treatment" | "hybrid" | "barrier" | "actives";
+
+export interface ClaimCard {
+  id: string;
+  kind: ClaimKind;
+  claim: string;
+  /** What the label must name for the claim to be real. */
+  named: string;
+  /** Dose / level that matters, or "not stated" guidance. */
+  dosed: string;
+  /** What testing (if any) would make the claim credible. */
+  tested: string;
+  /** When this claim should not drive a purchase. */
+  whenNotToBuy: string;
+  /** Witty-but-useful Vanity or Vice line. */
+  verdict: string;
 }

@@ -548,6 +548,17 @@ function ResultCard({
       <p className="text-sm leading-relaxed text-muted-foreground">
         <Highlight text={p.note} terms={terms} />
       </p>
+      {p.whenNot && (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          <span className="tracking-[0.18em] uppercase text-champagne">When not to buy · </span>
+          {p.whenNot}
+        </p>
+      )}
+      {p.claims && p.claims.length > 0 && (
+        <p className="text-[0.58rem] tracking-[0.18em] uppercase text-muted-foreground">
+          Claim tags · {p.claims.join(" · ")}
+        </p>
+      )}
       <div className="mt-auto space-y-3 border-t border-border pt-4">
         <button
           onClick={onPin}

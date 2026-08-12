@@ -13,32 +13,62 @@ export interface DeskProduct {
   filters: FilterKey[];
   /** Where it is easiest to buy. Absent means North America. */
   region?: Region;
+  /** Claim-literacy tags: spf | treatment | hybrid | barrier | actives */
+  claims?: string[];
+  /** When NOT to buy — honest, product-specific. */
+  whenNot?: string;
 }
 
+type ProductExtras = {
+  shades?: number;
+  region?: Region;
+  claims?: string[];
+  whenNot?: string;
+};
+
+/** Overload-friendly helper: 6th arg is either filters array or extras object. */
 const P = (
   brand: string,
   name: string,
   typeId: string,
   price: number,
   note: string,
-  filters: FilterKey[] = [],
-  shades?: number,
+  filtersOrExtras: FilterKey[] | ProductExtras = [],
+  shadesOrExtras?: number | ProductExtras,
   region?: Region,
-): DeskProduct => ({
-  id: `${brand}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-  brand,
-  name,
-  typeId,
-  price,
-  note,
-  filters,
-  ...(shades ? { shades } : {}),
-  ...(region ? { region } : {}),
-});
+): DeskProduct => {
+  let filters: FilterKey[] = [];
+  let extras: ProductExtras = {};
+  if (Array.isArray(filtersOrExtras)) {
+    filters = filtersOrExtras;
+    if (typeof shadesOrExtras === "number") {
+      extras = { shades: shadesOrExtras, ...(region ? { region } : {}) };
+    } else if (shadesOrExtras && typeof shadesOrExtras === "object") {
+      extras = shadesOrExtras;
+    } else if (region) {
+      extras = { region };
+    }
+  } else {
+    extras = filtersOrExtras;
+  }
+  return {
+    id: `${brand}-${name}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    brand,
+    name,
+    typeId,
+    price,
+    note,
+    filters,
+    ...(extras.shades ? { shades: extras.shades } : {}),
+    ...(extras.region ? { region: extras.region } : {}),
+    ...(extras.claims && extras.claims.length ? { claims: extras.claims } : {}),
+    ...(extras.whenNot ? { whenNot: extras.whenNot } : {}),
+  };
+};
 
 export const PRODUCTS: DeskProduct[] = [
   /* ── Serum tints and hybrid bases ── */
-  P("ILIA", "Super Serum Skin Tint SPF 40", "skin-tint", 54, "Tint, SPF and serum in one film — the default anti-pancake base.", ["vegan"], 30),
+  P("ILIA", "Super Serum Skin Tint SPF 40", "skin-tint", 54, "Tint, SPF and serum in one film — the default anti-pancake base. SPF still needs a continuous film.", ["vegan"], { shades: 30, claims: ["spf", "hybrid", "treatment"], whenNot: "Sheered to a stain on a high-UV day with no reapplication." }),
   P("Saie", "Slip Tint Dewy Tinted Moisturizer SPF 35", "skin-tint", 38, "Wettest of the tints; excellent on dehydrated skin, needs blotting on oily.", ["vegan"], 20),
   P("Kosas", "BB Burst Tinted Gel Cream", "tinted-moisturiser", 38, "Gel-cream that reads as skincare, not base.", ["vegan"], 20),
   P("Beautycounter", "Skin Twin Featherweight Foundation", "light-foundation", 46, "Light-to-medium with a matte-satin dry-down.", ["vegan"], 24),
@@ -177,6 +207,54 @@ export const PRODUCTS: DeskProduct[] = [
   P("Kiko Milano", "Unlimited Stylo Eye Pencil", "eyeliner-pencil", 12, "Cheap, competent, European high street.", [], 12, "Europe"),
   P("Frank Body", "Cheek Tint", "liquid-blush", 20, "Plainspoken colour with no ceremony attached.", ["vegan"], 4, "Australia"),
   P("INIKA Organic", "Certified Organic Perfection Concealer", "strategic-concealer", 34, "Organic spot work from the Australian mineral lane.", ["mineral", "vegan"], 6, "Australia"),
+
+  /* ── Drugstore tier ── */
+  P("e.l.f. Cosmetics", "Halo Glow Skin Tint", "skin-tint", 14, "Drugstore serum-tint logic: sheer, buildable, cheap enough to learn on.", ["vegan"], { shades: 12, claims: ["hybrid"], whenNot: "When you need full event opacity — this will not become foundation by wishing." }),
+  P("e.l.f. Cosmetics", "Camo Hydrating Multi-Stick", "drugstore-stick", 10, "Capsule stick at ten dollars — architecture without the tax.", ["vegan"], { shades: 8, claims: ["hybrid"], whenNot: "When you need precise liquid match across a deep olive band — ranges are shorter." }),
+  P("e.l.f. Cosmetics", "Camo Concealer", "blemish-concealer", 7, "Highest opacity on the smallest area — place, do not paint the face.", ["vegan"], { shades: 25, whenNot: "As a full-face base. That is how drugstore cake is born." }),
+  P("NYX Professional Makeup", "Bare With Me Tinted Skin Veil", "skin-tint", 16, "Veil, not mask. The name is the instruction.", ["vegan"], { shades: 12, claims: ["hybrid", "barrier"], whenNot: "Fragrance-sensitive days without reading the current label." }),
+  P("NYX Professional Makeup", "Color Correcting Concealer Green", "green-corrector", 10, "Green for redness — placement first, base second.", ["vegan"], { shades: 6, whenNot: "All over the face as a filter. Correctors are spots." }),
+  P("Maybelline", "Super Stay Skin Tint", "skin-tint", 15, "Pharmacy anti-pancake entry with real wear.", [], { shades: 18, claims: ["hybrid"], whenNot: "Dry altitude without prep — long-wear can cling to flakes." }),
+  P("Maybelline", "Instant Age Rewind Concealer", "brightening-concealer", 12, "Placed brightening, not a triangle of cake.", [], 18),
+  P("L'Oréal Paris", "True Match Nude Hyaluronic Tint", "tinted-moisturiser", 18, "Hyaluronic is named; dose is makeup-level. Buy the texture, not the serum fantasy.", [], { shades: 24, claims: ["treatment", "hybrid"], whenNot: "When a leave-on HA serum already does the job and you only need pigment." }),
+  P("Milani", "Cheek Kiss Cream Blush", "cream-blush", 11, "Cream architecture at drugstore price.", ["vegan"], 8),
+  P("Catrice", "HD Perfect Finish Powder", "setting-powder", 6, "HD powder — two panels only. Full-face is the failure mode.", ["vegan"], { shades: 3, region: "Europe", claims: ["hybrid"], whenNot: "As an all-over midday rebuild. That is cake with a German accent." }),
+  P("Essence", "Baby Got Blush", "powder-blush", 4, "Prove powder blush logic for pocket change.", ["vegan"], { shades: 6, region: "Europe" }),
+  P("Wet n Wild", "MegaGlo Highlighting Stick", "cream-highlighter", 6, "One lit plane experiment under $10.", ["vegan"], 6),
+  P("Neutrogena", "Purescreen Mineral UV Tint", "tinted-spf", 16, "Pharmacy mineral tint — SPF is the job; reapply still required.", ["fragranceFree", "mineral"], { shades: 4, claims: ["spf", "hybrid"], whenNot: "As all-day beach cover sheered to a stain with no reapplication." }),
+  P("CeraVe", "Hydrating Mineral Sunscreen SPF 30", "mineral-spf", 18, "Untinted mineral UV kept separate from colour — claim-literate prep.", ["fragranceFree", "mineral"], { claims: ["spf", "barrier"], whenNot: "When you need tint and buy this hoping it is makeup." }),
+  P("The Ordinary", "Niacinamide 10% + Zinc 1%", "hydrating-prep", 6, "Named and dosed — lives under makeup, not inside a foundation claim.", [], { claims: ["treatment", "actives"], whenNot: "As a reason to buy a thicker treatment foundation on top." }),
+
+  /* ── Mid / prestige / luxury expansions ── */
+  P("Glossier", "Skin Tint", "skin-tint", 36, "Sheerness as a feature. Short range is the known limit.", [], { shades: 12, claims: ["hybrid"], whenNot: "Deep bands needing fine undertone splits — the map is short." }),
+  P("Glossier", "Cloud Paint", "liquid-blush", 20, "Gel-cream flush that reads as circulation.", [], 8),
+  P("Rare Beauty", "Soft Pinch Liquid Blush", "liquid-blush", 23, "Long-wear liquid colour without base weight.", ["vegan"], { shades: 16, whenNot: "Layering half the shade range into a full glam stack daily." }),
+  P("Fenty Beauty", "Eaze Drop Blurring Skin Tint", "blur-balm", 34, "Blur and tint with a depth map that takes deep bands seriously.", [], { shades: 25, claims: ["hybrid"], whenNot: "When you need waterproof sport performance — different job." }),
+  P("Fenty Beauty", "Match Stix Matte Skinstick", "multi-stick", 30, "Contour and base placement stick — build, do not mask.", [], 20),
+  P("NARS", "Radiant Creamy Concealer", "strategic-concealer", 32, "Placed coverage that still flexes — a desk classic for a reason.", [], 30),
+  P("Laura Mercier", "Tinted Moisturizer Natural Skin Perfector", "tinted-moisturiser", 52, "The original tinted moisturiser lesson: moisture first, tone second.", [], { shades: 20, claims: ["hybrid"], whenNot: "Full-coverage event days — this will not densify on command." }),
+  P("Laura Mercier", "Translucent Loose Setting Powder", "setting-powder", 43, "Strategic set icon — T-zone only, or it becomes the cake lesson.", [], { shades: 3, whenNot: "Full-face application twice a day. That is the product villain origin story." }),
+  P("MAC", "Face and Body Foundation", "skin-tint", 39, "Pro sheer workhorse — build with sponge, stop early.", [], 24),
+  P("Bobbi Brown", "Vitamin Enriched Face Base", "hydrating-prep", 64, "Prep that makes every base more honest.", [], { claims: ["treatment", "hybrid"], whenNot: "As a thick silicone mask under already-heavy foundation." }),
+  P("Uoma Beauty", "Say What?! Foundation", "serum-foundation", 42, "Deep-range buildable medium — match first, sheer second.", ["vegan"], { shades: 51, claims: ["hybrid"], whenNot: "Defaulting to full opacity every weekday because the range finally fits." }),
+  P("Mented Cosmetics", "Skin by Mented Foundation", "light-foundation", 34, "Nude-for-deep logic in a buildable base.", ["vegan"], 12),
+  P("Sculpted by Aimee", "Skin Tint", "skin-tint", 28, "Irish weather-honest thin tint.", [], { shades: 14, region: "United Kingdom" }),
+  P("Charlotte Tilbury", "Hollywood Flawless Filter", "hd-blur", 49, "Optical glow as a single plane — HD friend when not stacked under a second base.", [], { shades: 12, claims: ["hybrid"], whenNot: "Under full foundation + powder + spray. Then it is just more film." }),
+  P("Charlotte Tilbury", "Beautiful Skin Foundation", "serum-foundation", 54, "Medium that can sheer — keep the hand light for skin-like.", [], 30),
+  P("Armani Beauty", "Luminous Silk Foundation", "serum-foundation", 69, "Reference luminous medium fluid. One film is the whole argument.", [], { shades: 40, whenNot: "Buying three backups and a full wardrobe because the bottle is glass." }),
+  P("Dior", "Backstage Face & Body Foundation", "skin-tint", 42, "Runway-honest sheer-buildable — the anti-pancake Dior.", [], { shades: 40, claims: ["hybrid"], whenNot: "When you wanted Forever full coverage and bought this by accident." }),
+  P("Chanel", "Les Beiges Water-Fresh Tint", "skin-tint", 62, "Quiet luxury sheerness — restraint is the flex.", [], { shades: 12, claims: ["hybrid"], whenNot: "Full glam opacity days." }),
+  P("Pat McGrath Labs", "Skin Fetish Sublime Perfection Foundation", "light-foundation", 68, "Sublime skin thin-to-medium; spend desire on eyes instead.", [], 36),
+  P("Make Up For Ever", "Ultra HD Skin Booster", "hd-blur", 48, "Camera diffusion — mist and press, do not paint.", [], { shades: 15, claims: ["hybrid"], whenNot: "Grocery-store daylight full coverage. HD tools are not weekday masks." }),
+  P("NARS", "Light Reflecting Foundation", "serum-foundation", 52, "Light over opacity — sheer on purpose.", [], 30),
+  P("Fenty Beauty", "Pro Filt'r Soft Matte Longwear Foundation", "light-foundation", 40, "Match-first prestige matte — sheer the first pass, stop.", [], { shades: 50, whenNot: "Full opaque weekday cake because the shade finally matches." }),
+  P("Rare Beauty", "Positive Light Under Eye Brightener", "brightening-concealer", 25, "Brighten without a dense concealer triangle.", ["vegan"], 12),
+  P("Tower 28", "SOS Daily Rescue Spray", "setting-spray", 20, "Sensitive-aware mist — not a fragrance cloud.", ["fragranceFree", "vegan"], { claims: ["barrier"], whenNot: "As medical treatment for dermatitis. Education only." }),
+  P("Supergoop!", "Glowscreen SPF 40", "tinted-spf", 38, "SPF-first glow primer hybrid — reapply or it is just pretty.", [], { shades: 4, claims: ["spf", "hybrid"], whenNot: "As sole beach protection under sweat with no reapplication." }),
+  P("Colorescience", "Total Eye 3-in-1 Renewal SPF 35", "brightening-concealer", 75, "Eye SPF hybrid — named filters; still not a 12-hour beach plan.", ["mineral"], { shades: 4, claims: ["spf", "treatment"], whenNot: "When the lure is treatment alone and the tint mismatches your undertone." }),
+  P("e.l.f. Cosmetics", "Camo Liquid Blush", "longwear-stain", 8, "Stain-like colour that survives humidity at drugstore pricing.", ["vegan"], { shades: 10, whenNot: "Dry under-eyes as cream highlight substitute." }),
+  P("Maybelline", "Fit Me Matte + Poreless (sheer pass only)", "light-foundation", 10, "Pharmacy medium — architecture says sheer the first pass and stop.", [], { shades: 40, whenNot: "Full-face matte cake as a daily personality." }),
+
 ];
 
 export const productRegion = (p: DeskProduct): Region => p.region ?? "North America";

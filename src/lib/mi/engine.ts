@@ -8,6 +8,7 @@ import type {
   Pathway,
   Profile,
   ScenarioResult,
+  ScoreVariable,
   Tier,
   ToolCall,
   TypeScore,
@@ -16,6 +17,161 @@ import type {
 
 const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 const has = (p: Profile, g: string) => p.goals.includes(g);
+
+/* ─────────────── Transparent score model (shown in the edit) ─────────────── */
+
+/** Pancake-risk starts at BASE_RISK, then signed deltas from each variable sum. Finish (skin-like) = 100 − risk. */
+export const BASE_RISK = 30;
+
+/**
+ * Every lever behind pancake-risk and finish scoring.
+ * Positive deltas raise pancake risk (and lower finish). Negative deltas do the opposite.
+ * Coefficients match the live architecture() maths — change one place, change both.
+ */
+export const SCORE_VARIABLES: ScoreVariable[] = [
+  {
+    id: "coverage",
+    label: "Coverage appetite",
+    weight: "(coverage − 30) × 0.45",
+    raisesRiskWhen: "You ask for more than light evening (coverage over ~30).",
+    lowersRiskWhen: "Sheer intent (coverage under ~20) keeps the film thin from the start.",
+    finishEffect: "High coverage is the largest single drag on a skin-like finish.",
+  },
+  {
+    id: "layers",
+    label: "Layer count",
+    weight: "max(0, layers − 3) × 7 − max(0, 3 − layers) × 5",
+    raisesRiskWhen: "More than three opacity films on the face.",
+    lowersRiskWhen: "Two or fewer films — architecture over product.",
+    finishEffect: "Each extra edge is a place the finish can lift, crease or go grey.",
+  },
+  {
+    id: "dehydration",
+    label: "Dehydration stress",
+    weight: "dryStress × (coverage > 45 ? 1.2 : 0.55); dryStress = skin dry 10 / normal 3 + climate altitude 12 / dry 8",
+    raisesRiskWhen: "Dry skin or thin air, especially under medium-plus coverage.",
+    lowersRiskWhen: "Temperate/humid context with non-dry skin.",
+    finishEffect: "Water leaving the film is what turns opacity into cake.",
+  },
+  {
+    id: "sebum",
+    label: "Sebum movement",
+    weight: "oilStress × (maintenance ≥ 2 ? 0.5 : 1); oilStress = oily 12 / combination 7",
+    raisesRiskWhen: "Oily or combination skin with no planned touch-up.",
+    lowersRiskWhen: "Low sebum, or maintenance ≥ 2 (you will blot and reset).",
+    finishEffect: "Oil moves the base sideways; thin films and blotting protect finish.",
+  },
+  {
+    id: "maintenance",
+    label: "Maintenance tolerance",
+    weight: "maintenance ≥ 2 → −6; else 8 − maintenance × 4",
+    raisesRiskWhen: "You refuse midday intervention (maintenance 0–1).",
+    lowersRiskWhen: "You will blot or reset once (maintenance 2–3).",
+    finishEffect: "A slightly richer finish only survives if you will intervene.",
+  },
+  {
+    id: "time",
+    label: "Time on the face",
+    weight: "≤5 min → −8; ≥25 min → +7; else 0",
+    raisesRiskWhen: "Long routines (≥25 min) that tempt undiagnosed layers.",
+    lowersRiskWhen: "Five-minute routines that physically cannot over-build.",
+    finishEffect: "Minutes are a complexity budget, not a virtue.",
+  },
+  {
+    id: "desire",
+    label: "Desire",
+    weight: "desire ≥ 3 → +9; desire 0 → −10; else +2",
+    raisesRiskWhen: "High ritual appetite spent on opacity instead of definition.",
+    lowersRiskWhen: "Low appetite that naturally keeps the stack short.",
+    finishEffect: "Desire is allowed — finish stays honest when appetite buys colour, not cake.",
+  },
+  {
+    id: "anti-pancake",
+    label: "Anti-pancake / wear-less goals",
+    weight: "−9 when escape-pancake or wear-less is selected",
+    raisesRiskWhen: "—",
+    lowersRiskWhen: "You stated skin-like or wear-less as a goal.",
+    finishEffect: "Reorders scoring toward skin-like pathways first.",
+  },
+  {
+    id: "reactivity",
+    label: "Reactivity",
+    weight: "+5 when sensitivity ≥ 2",
+    raisesRiskWhen: "Reactive skin plus heavy removal of thick films.",
+    lowersRiskWhen: "Low sensitivity — reactivity term stays off.",
+    finishEffect: "Fewer films protect both barrier and finish.",
+  },
+  {
+    id: "texture",
+    label: "Texture visibility",
+    weight: "+6 when texture or large pores is a concern",
+    raisesRiskWhen: "Opaque product will settle into texture.",
+    lowersRiskWhen: "No texture concern flagged.",
+    finishEffect: "Diffusion and placement beat opacity on visible texture.",
+  },
+  {
+    id: "outdoors",
+    label: "Outdoor exposure",
+    weight: "+4 when outdoors ≥ 2",
+    raisesRiskWhen: "Heat, sweat and UV shorten the honest life of a thick base.",
+    lowersRiskWhen: "Mostly indoor days.",
+    finishEffect: "Outdoor load pushes the kit toward thin SPF hybrids, not cake.",
+  },
+  {
+    id: "mature",
+    label: "Mature / fine-line context",
+    weight: "+5 when fine lines concern; +4 when mature-skin goal",
+    raisesRiskWhen: "Powder-heavy stacks on textured, mature skin.",
+    lowersRiskWhen: "Flexible cream films with prep.",
+    finishEffect: "Emollient thin films read as skin; powder cakes in lines.",
+  },
+  {
+    id: "deep-match",
+    label: "Deep depth + undertone pressure",
+    weight: "+4 when depth ≥ 8; +3 when olive / red-leaning / deep-neutral undertone",
+    raisesRiskWhen: "Short shade ranges force over-application to force a match.",
+    lowersRiskWhen: "Mid depth with neutral lean — most ranges were built here.",
+    finishEffect: "Wrong undertone reads grey; people add layers to compensate. Architecture says match first, layers never.",
+  },
+  {
+    id: "rosacea",
+    label: "Rosacea-prone architecture",
+    weight: "+6 when rosacea goal or high sensitivity + redness concern",
+    raisesRiskWhen: "Full-face opacity as the reflex answer to redness.",
+    lowersRiskWhen: "Placement-first, fragrance-aware, thin films.",
+    finishEffect: "Corrector + sheer base outperforms a mask on reactive redness.",
+  },
+  {
+    id: "sport",
+    label: "Performance / sweat load",
+    weight: "+5 when performance-sport goal; +3 when outdoors ≥ 3 with shine goal",
+    raisesRiskWhen: "Heavy base under sweat without a blotting plan.",
+    lowersRiskWhen: "Tinted SPF + stain colour + no powder stack.",
+    finishEffect: "Sport finish is thin, grippy where needed, and honest about reapplication.",
+  },
+  {
+    id: "hd",
+    label: "HD / photography load",
+    weight: "+4 when hd-photo or on-camera path goals emphasize event + texture",
+    raisesRiskWhen: "Opacity under hard light; powder flashback; glitter highlight.",
+    lowersRiskWhen: "Blur, place, define — never cake for the lens.",
+    finishEffect: "Lenses punish layers before they punish colour. Diffusion is the finish.",
+  },
+];
+
+/** Type-score (fit) weights — from a neutral 50 before profile stretch. */
+export const TYPE_SCORE_WEIGHTS: { label: string; weight: string; note: string }[] = [
+  { label: "Coverage match", weight: "−|type.coverage − profile.coverage| × 0.42", note: "Closest delivery to your appetite wins." },
+  { label: "Sebum behaviour", weight: "type.oil × 6 (oily) or × 3.5 (combination)", note: "How the texture holds on sebum." },
+  { label: "Dehydration behaviour", weight: "type.dry × 6 (altitude) or × 4.5 (dry)", note: "Film flexibility against water loss." },
+  { label: "Layer weight", weight: "−layerWeight × 7 if anti-pancake else × 4", note: "Opacity load is always costly; costlier when escaping cake." },
+  { label: "Upkeep demanded", weight: "−upkeep × 5 if maintenance = 0", note: "No touch-ups means high-upkeep objects lose." },
+  { label: "Time cost", weight: "−max(0, minutes − 2) × 5 if timeBudget ≤ 5", note: "Slow steps drop out of short routines." },
+  { label: "Wear-less / multi-use / goals", weight: "+8 to +22 on pathway-aligned types; −6 to −8 on conflicts", note: "Goals reweight lanes, they do not invent miracles." },
+  { label: "Filters & budget", weight: "mineral +7; silicone-averse −7 on silicone-leaning lanes; lean colour −3", note: "Preferences are hard constraints when you set them." },
+  { label: "Depth / undertone (base lane)", weight: "+6 when depth ≥ 7 and type is sheer-to-medium; −8 full coverage with depth ≥ 8 and no wide-range signal", note: "Deep bands need placement and range, not more opacity." },
+  { label: "Claim-literacy caution", weight: "−4 on full-foundation when SPF-hybrid goal is absent but treatment-hybrid language is the only lure", note: "Do not buy thickness for a skincare claim." },
+];
 
 /* ─────────────── Architecture / pancake risk ─────────────── */
 
@@ -31,6 +187,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
         : p.coverage < 20
           ? "Sheer intent keeps the film thin from the start."
           : "Moderate coverage stays inside the skin-like band.",
+    weight: "(coverage − 30) × 0.45",
   });
 
   const layers = plannedLayers ?? Math.round(1 + p.coverage / 28 + p.desire * 0.6);
@@ -41,6 +198,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
       layers > 4
         ? "Every additional film multiplies edges that can lift or crack."
         : "Few layers — architecture is doing the work instead of product.",
+    weight: "max(0, layers−3)×7 − max(0, 3−layers)×5",
   });
 
   const dryStress =
@@ -53,6 +211,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
       dryStress > 12
         ? "Dry or thin air pulls water out of the film, so opaque bases crack first."
         : "Environment is not fighting the film much.",
+    weight: `dryStress ${dryStress} × ${p.coverage > 45 ? "1.2" : "0.55"}`,
   });
 
   const oilStress = p.skin === "oily" ? 12 : p.skin === "combination" ? 7 : 0;
@@ -65,6 +224,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
         : p.maintenance >= 2
           ? "Oil will move the base, but you are willing to blot and reset."
           : "Oil will move the base and you do not want to touch it up — so it has to be thin.",
+    weight: `oilStress ${oilStress} × ${p.maintenance >= 2 ? "0.5" : "1"}`,
   });
 
   c.push({
@@ -74,6 +234,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
       p.maintenance >= 2
         ? "You will intervene at midday, which lets a slightly richer finish survive."
         : "No touch-ups means the finish must be correct at 8am and forgiving by 4pm.",
+    weight: p.maintenance >= 2 ? "−6 (maintenance ≥ 2)" : "8 − maintenance × 4",
   });
 
   c.push({
@@ -85,6 +246,7 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
         : p.timeBudget >= 25
           ? "Long routines tempt extra layers that were never diagnosed."
           : "Enough time to place product, not enough to over-build.",
+    weight: "≤5 min → −8 · ≥25 min → +7 · else 0",
   });
 
   c.push({
@@ -96,22 +258,84 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
         : p.desire === 0
           ? "Low appetite naturally keeps the stack short."
           : "Moderate appetite, easily satisfied with colour rather than base.",
+    weight: "desire ≥ 3 → +9 · 0 → −10 · else +2",
   });
 
   if (has(p, "escape-pancake") || has(p, "wear-less")) {
-    c.push({ label: "Anti-pancake goal", delta: -9, note: "The stated goal reorders scoring toward skin-like pathways first." });
+    c.push({
+      label: "Anti-pancake goal",
+      delta: -9,
+      note: "The stated goal reorders scoring toward skin-like pathways first.",
+      weight: "−9 (escape-pancake or wear-less)",
+    });
   }
   if (p.sensitivity >= 2) {
-    c.push({ label: "Reactivity", delta: 5, note: "Reactive skin tolerates fewer films, and heavy removal adds its own insult." });
+    c.push({
+      label: "Reactivity",
+      delta: 5,
+      note: "Reactive skin tolerates fewer films, and heavy removal adds its own insult.",
+      weight: "+5 (sensitivity ≥ 2)",
+    });
   }
   if (p.concerns.includes("texture") || p.concerns.includes("large pores")) {
-    c.push({ label: "Texture visibility", delta: 6, note: "Opaque product settles into texture — the cake reads worse, not better." });
+    c.push({
+      label: "Texture visibility",
+      delta: 6,
+      note: "Opaque product settles into texture — the cake reads worse, not better.",
+      weight: "+6 (texture or large pores)",
+    });
   }
   if (p.outdoors >= 2) {
-    c.push({ label: "Outdoor exposure", delta: 4, note: "Heat, sweat and UV all shorten the honest life of a thick base." });
+    c.push({
+      label: "Outdoor exposure",
+      delta: 4,
+      note: "Heat, sweat and UV all shorten the honest life of a thick base.",
+      weight: "+4 (outdoors ≥ 2)",
+    });
+  }
+  if (p.concerns.includes("fine lines") || has(p, "mature-skin")) {
+    c.push({
+      label: "Mature / fine-line context",
+      delta: (p.concerns.includes("fine lines") ? 5 : 0) + (has(p, "mature-skin") ? 4 : 0),
+      note: "Powder stacks settle into lines; flexible cream films and prep protect finish.",
+      weight: "fine lines +5 · mature-skin goal +4",
+    });
+  }
+  if (p.depth >= 8 || ["olive", "golden-olive", "deep-neutral", "red-leaning"].includes(p.undertone)) {
+    const d = (p.depth >= 8 ? 4 : 0) + (["olive", "golden-olive", "deep-neutral", "red-leaning"].includes(p.undertone) ? 3 : 0);
+    c.push({
+      label: "Deep depth + undertone pressure",
+      delta: d,
+      note: "Short ranges force over-application to force a match — match first, never more layers.",
+      weight: "depth ≥ 8 → +4 · olive/red/deep-neutral lean → +3",
+    });
+  }
+  if (has(p, "rosacea") || (p.sensitivity >= 2 && (has(p, "redness") || p.concerns.includes("redness")))) {
+    c.push({
+      label: "Rosacea-prone architecture",
+      delta: 6,
+      note: "Full-face opacity is the reflex answer to redness and the wrong one. Placement first.",
+      weight: "+6 (rosacea goal or reactive + redness)",
+    });
+  }
+  if (has(p, "performance-sport")) {
+    c.push({
+      label: "Performance / sweat load",
+      delta: 5,
+      note: "Sweat plus heavy base is a transfer event. Thin films, stains, blotting.",
+      weight: "+5 (performance-sport goal)",
+    });
+  }
+  if (has(p, "hd-photo") || (has(p, "event") && p.concerns.includes("texture"))) {
+    c.push({
+      label: "HD / photography load",
+      delta: 4,
+      note: "Lenses punish layers before they punish colour. Diffusion over opacity.",
+      weight: "+4 (hd-photo or event+texture)",
+    });
   }
 
-  const risk = clamp(Math.round(30 + c.reduce((s, x) => s + x.delta, 0)));
+  const risk = clamp(Math.round(BASE_RISK + c.reduce((s, x) => s + x.delta, 0)));
   const skinlike = 100 - risk;
   const headline =
     risk < 25 ? "Skin-first architecture" : risk < 45 ? "Balanced architecture" : risk < 65 ? "Cake pressure building" : "Pancake likely";
@@ -124,7 +348,14 @@ export function architecture(p: Profile, plannedLayers?: number): Architecture {
           ? "Two decisions are fighting each other — usually coverage appetite against dehydration or sebum. Trade opacity for placement."
           : "At this coverage and layer count the finish will read as a mask by mid-afternoon. Cut a layer before you change a brand.";
 
-  return { risk, skinlike, headline, verdict, contributions: c.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)) };
+  return {
+    risk,
+    skinlike,
+    headline,
+    verdict,
+    baseRisk: BASE_RISK,
+    contributions: c.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)),
+  };
 }
 
 /* ─────────────── Product-type scoring ─────────────── */
@@ -134,10 +365,10 @@ function scoreType(p: Profile, t: ProductType): TypeScore {
   const reasons: string[] = [];
   const cautions: string[] = [];
   const breakdown: Contribution[] = [];
-  const bump = (label: string, delta: number, note: string) => {
+  const bump = (label: string, delta: number, note: string, weight?: string) => {
     if (Math.round(delta) === 0) return;
     s += delta;
-    breakdown.push({ label, delta: Math.round(delta), note });
+    breakdown.push({ label, delta: Math.round(delta), note, ...(weight ? { weight } : {}) });
   };
 
   const gap = t.coverage - p.coverage;
@@ -145,87 +376,190 @@ function scoreType(p: Profile, t: ProductType): TypeScore {
     "Coverage match",
     -Math.abs(gap) * 0.42,
     `Delivers ${t.coverage} against your appetite of ${p.coverage}.`,
+    "−|Δ coverage| × 0.42",
   );
   if (Math.abs(gap) <= 12) reasons.push("Delivers almost exactly the coverage you asked for.");
   else if (gap > 25) cautions.push("Gives more opacity than you said you wanted.");
   else if (gap < -25 && t.lane === "base") cautions.push("Sheerer than your stated appetite — pair with spot work.");
 
   if (p.skin === "oily" || p.skin === "combination") {
-    bump("Sebum behaviour", t.oil * (p.skin === "oily" ? 6 : 3.5), `How this texture behaves on ${p.skin} skin.`);
+    bump("Sebum behaviour", t.oil * (p.skin === "oily" ? 6 : 3.5), `How this texture behaves on ${p.skin} skin.`, `oil × ${p.skin === "oily" ? 6 : 3.5}`);
     if (t.oil >= 2) reasons.push("Holds up against sebum movement.");
     if (t.oil <= -1) cautions.push("Can slide or go patchy on oilier zones.");
   }
   if (p.skin === "dry" || p.climate === "dry" || p.climate === "altitude") {
-    bump("Dehydration behaviour", t.dry * (p.climate === "altitude" ? 6 : 4.5), `Film flexibility against ${p.climate === "altitude" ? "thin air" : "dry conditions"}.`);
+    bump("Dehydration behaviour", t.dry * (p.climate === "altitude" ? 6 : 4.5), `Film flexibility against ${p.climate === "altitude" ? "thin air" : "dry conditions"}.`, `dry × ${p.climate === "altitude" ? 6 : 4.5}`);
     if (t.dry >= 2) reasons.push("Flexible film that survives dehydrated skin and thin air.");
     if (t.dry <= -2) cautions.push("Powder-heavy texture is the first thing to crack when skin is dry.");
   }
 
-  bump("Layer weight", -t.layerWeight * (has(p, "escape-pancake") ? 7 : 4), has(p, "escape-pancake") ? "Weighted harder because escaping pancake is a stated goal." : "Every unit of opacity load costs points.");
+  bump("Layer weight", -t.layerWeight * (has(p, "escape-pancake") ? 7 : 4), has(p, "escape-pancake") ? "Weighted harder because escaping pancake is a stated goal." : "Every unit of opacity load costs points.", has(p, "escape-pancake") ? "−layerWeight × 7" : "−layerWeight × 4");
   if (t.layerWeight === 0 && t.lane !== "care") reasons.push("Adds zero opacity to the stack.");
   if (t.layerWeight >= 3) cautions.push("Heaviest layer weight on the desk.");
 
   if (p.maintenance === 0) {
-    bump("Upkeep demanded", -t.upkeep * 5, "You have ruled out midday intervention.");
+    bump("Upkeep demanded", -t.upkeep * 5, "You have ruled out midday intervention.", "−upkeep × 5");
     if (t.upkeep >= 2) cautions.push("Needs re-application you have said you will not do.");
   }
-  if (p.timeBudget <= 5) bump("Time cost", -Math.max(0, t.minutes - 2) * 5, `Takes about ${t.minutes} minutes inside a ${p.timeBudget}-minute routine.`);
-  if (p.timeBudget >= 20 && t.lane !== "base") bump("Time available", 3, "There is room for a non-base step.");
+  if (p.timeBudget <= 5) bump("Time cost", -Math.max(0, t.minutes - 2) * 5, `Takes about ${t.minutes} minutes inside a ${p.timeBudget}-minute routine.`, "−max(0, min−2) × 5");
+  if (p.timeBudget >= 20 && t.lane !== "base") bump("Time available", 3, "There is room for a non-base step.", "+3");
 
-  if (has(p, "wear-less") && t.lane === "base") bump("Wear-less goal", -t.layerWeight * 6, "Base weight is penalised while you are wearing less.");
-  if (has(p, "wear-less") && t.id === "no-base") bump("Wear-less goal", 22, "Bare skin is the literal answer to the goal you set.");
+  if (has(p, "wear-less") && t.lane === "base") bump("Wear-less goal", -t.layerWeight * 6, "Base weight is penalised while you are wearing less.", "−layerWeight × 6");
+  if (has(p, "wear-less") && t.id === "no-base") bump("Wear-less goal", 22, "Bare skin is the literal answer to the goal you set.", "+22");
   if (t.id === "no-base" && p.coverage > 18) {
-    bump("Coverage asked for", -(p.coverage - 18) * 0.55, "You asked for visible evening.");
+    bump("Coverage asked for", -(p.coverage - 18) * 0.55, "You asked for visible evening.", "−(coverage−18) × 0.55");
     cautions.push("You asked for visible evening — bare skin cannot deliver it.");
   }
-  if (has(p, "simplify") || has(p, "fast-polish")) {
-    if (["multi-stick", "lip-cheek-balm", "cream-blush", "tinted-balm", "brow-gel", "blur-balm", "liquid-blush", "cream-bronzer", "satin-lipstick"].includes(t.id)) {
-      bump("Multi-use bonus", 9, "One object, several jobs.");
+  if (has(p, "simplify") || has(p, "fast-polish") || has(p, "minimalist")) {
+    if (["multi-stick", "lip-cheek-balm", "cream-blush", "tinted-balm", "brow-gel", "blur-balm", "liquid-blush", "cream-bronzer", "satin-lipstick", "sport-tint"].includes(t.id)) {
+      bump("Multi-use bonus", 9, "One object, several jobs.", "+9");
       reasons.push("One object, several jobs — protects a short kit.");
     }
-    if (t.minutes >= 4) bump("Step length", -6, "Slower than a simplified routine tolerates.");
+    if (t.minutes >= 4) bump("Step length", -6, "Slower than a simplified routine tolerates.", "−6");
   }
-  if (has(p, "alternatives") && ["skin-tint", "tinted-spf", "multi-stick", "no-base", "mineral-powder", "tinted-moisturiser", "blur-balm", "bronzing-drops", "hydrating-prep", "mineral-spf"].includes(t.id)) {
-    bump("Alternative pathway", 8, "Sits outside conventional base architecture.");
+  if (has(p, "alternatives") && ["skin-tint", "tinted-spf", "multi-stick", "no-base", "mineral-powder", "tinted-moisturiser", "blur-balm", "bronzing-drops", "hydrating-prep", "mineral-spf", "sport-tint"].includes(t.id)) {
+    bump("Alternative pathway", 8, "Sits outside conventional base architecture.", "+8");
     reasons.push("Sits on an alternative pathway rather than conventional base.");
   }
-  if (has(p, "redness") || p.concerns.includes("redness")) {
-    if (["colour-corrector", "strategic-concealer", "hydrating-corrector"].includes(t.id)) { bump("Redness targeting", 12, "Treats redness as placement, not a full-face problem."); reasons.push("Targets redness where it is, instead of covering the whole face."); }
-    if (t.id === "full-foundation") { bump("Over-correction risk", -8, "Full base is the reflex answer to redness, and the wrong one."); cautions.push("Full base is the usual over-correction for redness."); }
+  if (has(p, "redness") || has(p, "rosacea") || p.concerns.includes("redness")) {
+    if (["colour-corrector", "strategic-concealer", "hydrating-corrector", "green-corrector"].includes(t.id)) {
+      bump("Redness targeting", 12, "Treats redness as placement, not a full-face problem.", "+12");
+      reasons.push("Targets redness where it is, instead of covering the whole face.");
+    }
+    if (t.id === "full-foundation") {
+      bump("Over-correction risk", -8, "Full base is the reflex answer to redness, and the wrong one.", "−8");
+      cautions.push("Full base is the usual over-correction for redness.");
+    }
   }
   if (has(p, "awake") && ["brightening-concealer", "cream-highlighter", "brow-gel", "mascara", "hydrating-corrector", "brow-pencil", "eyeliner-pencil"].includes(t.id)) {
-    bump("Awake signal", 11, "Buys alertness without complexion cost."); reasons.push("Reads as awake without touching the complexion.");
+    bump("Awake signal", 11, "Buys alertness without complexion cost.", "+11");
+    reasons.push("Reads as awake without touching the complexion.");
   }
-  if (has(p, "shine")) {
-    if (["blotting-paper", "setting-powder", "shine-stick"].includes(t.id)) { bump("Shine control", 12, "Controls shine without a full-face matte layer."); reasons.push("Shine control that stays strategic, not full-face matte."); }
-    if (t.id === "pressed-powder") { bump("Re-powder trap", -6, "Portable powder invites the afternoon rebuild."); cautions.push("Portable powder is where most cake is applied, not at 8am."); }
+  if (has(p, "shine") || p.climate === "humid") {
+    if (["blotting-paper", "setting-powder", "shine-stick"].includes(t.id)) {
+      bump("Shine control", 12, "Controls shine without a full-face matte layer.", "+12");
+      reasons.push("Shine control that stays strategic, not full-face matte.");
+    }
+    if (t.id === "pressed-powder") {
+      bump("Re-powder trap", -6, "Portable powder invites the afternoon rebuild.", "−6");
+      cautions.push("Portable powder is where most cake is applied, not at 8am.");
+    }
   }
-  if (has(p, "dryness") && t.dry >= 2) { bump("Dryness goal", 8, "Adds flex and water rather than powder."); reasons.push("Adds water and flex rather than powder."); }
-  if (has(p, "event")) {
-    if (t.longevity >= 2 && t.layerWeight <= 1) { bump("Event longevity", 9, "Holds without adding opacity."); reasons.push("Longevity earned through the right product, not more base."); }
-    if (["lip-stain", "shadow-stick", "lip-liner", "eyeliner-pencil", "shadow-duo"].includes(t.id)) bump("Definition lane", 6, "Definition is where event budget belongs.");
+  if (has(p, "dryness") && t.dry >= 2) {
+    bump("Dryness goal", 8, "Adds flex and water rather than powder.", "+8");
+    reasons.push("Adds water and flex rather than powder.");
   }
-  if (p.outdoors >= 2 && ["tinted-spf", "mineral-spf"].includes(t.id)) { bump("Outdoor exposure", 14, "UV strategy becomes the product's real job."); reasons.push("Outdoor exposure makes SPF the product's real job."); }
-  if (p.outdoors <= 0 && t.id === "tinted-spf") bump("Indoor context", -4, "Little UV load to justify the hybrid.");
+  if (has(p, "event") || has(p, "hd-photo")) {
+    if (t.longevity >= 2 && t.layerWeight <= 1) {
+      bump("Event longevity", 9, "Holds without adding opacity.", "+9");
+      reasons.push("Longevity earned through the right product, not more base.");
+    }
+    if (["lip-stain", "shadow-stick", "lip-liner", "eyeliner-pencil", "shadow-duo", "hd-blur"].includes(t.id)) {
+      bump("Definition lane", 6, "Definition is where event budget belongs.", "+6");
+    }
+    if (has(p, "hd-photo") && ["hd-blur", "blur-balm", "serum-foundation"].includes(t.id)) {
+      bump("HD diffusion", 10, "Lenses want blur and place, not opacity.", "+10");
+      reasons.push("Built for diffusion under hard light.");
+    }
+    if (has(p, "hd-photo") && t.id === "powder-highlighter") {
+      bump("Flash risk", -8, "Powder sparkle flashbacks on camera.", "−8");
+      cautions.push("Powder highlight is a flashback risk under HD light.");
+    }
+  }
+  if (p.outdoors >= 2 && ["tinted-spf", "mineral-spf", "sport-tint"].includes(t.id)) {
+    bump("Outdoor exposure", 14, "UV strategy becomes the product's real job.", "+14");
+    reasons.push("Outdoor exposure makes SPF the product's real job.");
+  }
+  if (p.outdoors <= 0 && t.id === "tinted-spf") bump("Indoor context", -4, "Little UV load to justify the hybrid.", "−4");
   if (p.coverage > 45 && (p.skin === "dry" || p.climate === "altitude") && t.id === "hydrating-prep") {
-    bump("Prep leverage", 14, "The one step that lets a richer base stay honest here.");
+    bump("Prep leverage", 14, "The one step that lets a richer base stay honest here.", "+14");
     reasons.push("Prep is the cheapest anti-cake move available at this coverage.");
   }
 
-  if (p.sensitivity >= 2) {
-    bump("Reactivity", -t.layerWeight * 4, "Reactive skin tolerates fewer films.");
-    if (t.id === "primer") { bump("Unjustified film", -10, "No documented wear failure to justify it."); cautions.push("Another film on reactive skin without a documented wear failure."); }
-    if (t.lane === "spot") { bump("Small surface area", 6, "Less area covered means less to react to."); reasons.push("Less surface area covered means less to react to."); }
+  if (p.sensitivity >= 2 || has(p, "fragrance-sensitive") || has(p, "rosacea")) {
+    bump("Reactivity", -t.layerWeight * 4, "Reactive skin tolerates fewer films.", "−layerWeight × 4");
+    if (t.id === "primer") {
+      bump("Unjustified film", -10, "No documented wear failure to justify it.", "−10");
+      cautions.push("Another film on reactive skin without a documented wear failure.");
+    }
+    if (t.lane === "spot") {
+      bump("Small surface area", 6, "Less area covered means less to react to.", "+6");
+      reasons.push("Less surface area covered means less to react to.");
+    }
   }
-  if (p.filters.includes("mineral") && ["mineral-powder", "tinted-spf", "mineral-spf", "pressed-powder", "powder-bronzer"].includes(t.id)) { bump("Mineral filter", 7, "Honours your mineral preference."); reasons.push("Honours your mineral filter."); }
-  if (p.filters.includes("siliconeFree") && ["full-foundation", "primer", "cushion-compact"].includes(t.id)) { bump("Silicone-averse", -7, "This lane leans silicone — verify formulas."); cautions.push("This lane leans silicone — verify formulas."); }
-  if (p.budget === "lean" && t.lane === "colour" && !["lip-cheek-balm", "bronzing-drops"].includes(t.id)) bump("Lean budget", -3, "Colour is the easiest lane to postpone.");
-  if (p.budget === "open" && ["serum-foundation", "cream-bronzer", "satin-lipstick"].includes(t.id)) bump("Open budget", 3, "Texture quality is worth paying for in this lane.");
+  if (p.filters.includes("mineral") && ["mineral-powder", "tinted-spf", "mineral-spf", "pressed-powder", "powder-bronzer"].includes(t.id)) {
+    bump("Mineral filter", 7, "Honours your mineral preference.", "+7");
+    reasons.push("Honours your mineral filter.");
+  }
+  if (p.filters.includes("siliconeFree") && ["full-foundation", "primer", "cushion-compact"].includes(t.id)) {
+    bump("Silicone-averse", -7, "This lane leans silicone — verify formulas.", "−7");
+    cautions.push("This lane leans silicone — verify formulas.");
+  }
+  if (p.filters.includes("fragranceFree") && ["colour-corrector", "strategic-concealer", "tinted-moisturiser", "skin-tint"].includes(t.id)) {
+    bump("Fragrance-free lane", 4, "Common homes for fragrance-free formulas — still verify the unit.", "+4");
+  }
+  if (p.budget === "lean" && t.lane === "colour" && !["lip-cheek-balm", "bronzing-drops"].includes(t.id)) bump("Lean budget", -3, "Colour is the easiest lane to postpone.", "−3");
+  if (p.budget === "open" && ["serum-foundation", "cream-bronzer", "satin-lipstick", "hd-blur"].includes(t.id)) bump("Open budget", 3, "Texture quality is worth paying for in this lane.", "+3");
 
   if (p.desire >= 3 && ["cream-blush", "shadow-stick", "lip-stain", "cream-highlighter", "liquid-blush", "satin-lipstick", "cream-bronzer", "eyeliner-pencil"].includes(t.id)) {
-    bump("Desire spend", 8, "Desire is allowed — this is where it belongs."); reasons.push("Desire is allowed — this is where to spend it.");
+    bump("Desire spend", 8, "Desire is allowed — this is where it belongs.", "+8");
+    reasons.push("Desire is allowed — this is where to spend it.");
   }
-  if (p.desire <= 0 && t.lane === "colour") bump("Low appetite", -6, "You are not asking for colour right now.");
+  if (p.desire <= 0 && t.lane === "colour") bump("Low appetite", -6, "You are not asking for colour right now.", "−6");
+
+  // Mature skin: favour flexible cream, penalise powder-heavy
+  if (has(p, "mature-skin") || p.concerns.includes("fine lines")) {
+    if (["blur-balm", "tinted-moisturiser", "serum-foundation", "cream-blush", "hydrating-prep", "hydrating-corrector", "lip-oil"].includes(t.id)) {
+      bump("Mature-skin flex", 9, "Flexible film that does not settle into lines.", "+9");
+      reasons.push("Flexible film — kinder on mature texture.");
+    }
+    if (["mineral-powder", "pressed-powder", "powder-bronzer", "powder-highlighter", "full-foundation"].includes(t.id)) {
+      bump("Settling risk", -9, "Powder and heavy opacity settle into lines under daylight.", "−9");
+      cautions.push("Powder and full opacity settle into lines — use with extreme restraint.");
+    }
+  }
+
+  // Deep skin + undertone: reward sheer-to-medium with placement, penalise short-range full coverage reflex
+  if (p.depth >= 7 && t.lane === "base") {
+    if (t.layerWeight <= 2 && t.coverage <= 55) {
+      bump("Deep-band architecture", 6, "Sheer-to-medium leaves undertone visible instead of greying it out.", "+6");
+      reasons.push("Lets undertone show — critical on deep and olive bands.");
+    }
+    if (t.id === "full-foundation") {
+      bump("Opacity trap on deep bands", -8, "Full coverage is often used to force a bad match. Match first.", "−8");
+      cautions.push("On deep bands, full coverage often hides a mismatch instead of fixing it.");
+    }
+  }
+  if (["olive", "golden-olive", "red-leaning", "deep-neutral"].includes(p.undertone) && ["multi-stick", "serum-foundation", "skin-tint", "strategic-concealer"].includes(t.id)) {
+    bump("Undertone-friendly lane", 5, "Buildable, blendable textures that accept olive and red leans.", "+5");
+  }
+
+  // Performance / sport
+  if (has(p, "performance-sport")) {
+    if (["sport-tint", "tinted-spf", "lip-stain", "blotting-paper", "mascara", "brow-gel", "mineral-spf"].includes(t.id)) {
+      bump("Sport kit", 11, "Sweat-honest: thin, stain, blot — not a powder rebuild.", "+11");
+      reasons.push("Survives sweat without inviting a powder stack.");
+    }
+    if (["full-foundation", "cream-highlighter", "powder-highlighter", "lip-oil"].includes(t.id)) {
+      bump("Sweat liability", -8, "Migrates or slides under sweat.", "−8");
+      cautions.push("High migration risk under sweat.");
+    }
+  }
+
+  // Fragrance-sensitive goal
+  if (has(p, "fragrance-sensitive") && t.lane === "base" && t.layerWeight >= 2) {
+    bump("Fragrance surface area", -5, "More film = more fragrance contact if the formula is scented — verify labels.", "−5");
+  }
+
+  // Claim-literacy: do not reward heavy base solely for hybrid marketing
+  if (t.id === "full-foundation" && !has(p, "event") && p.coverage < 50) {
+    bump("Claim-literacy caution", -4, "Do not buy thickness for a skincare claim you have not verified as named, dosed and tested.", "−4");
+    cautions.push("If the lure is a 'treatment' claim, read the claim-literacy card before the opacity.");
+  }
+
+  if (has(p, "even-tone") && ["strategic-concealer", "skin-tint", "light-foundation", "colour-corrector"].includes(t.id)) {
+    bump("Even-tone path", 6, "Evening without a mask.", "+6");
+  }
 
   const score = clamp(Math.round(s));
   const tier: Tier = score >= 68 ? "core" : score >= 48 ? "consider" : "hold";
@@ -239,7 +573,7 @@ function scoreType(p: Profile, t: ProductType): TypeScore {
     cautions: cautions.slice(0, 2),
     examples: t.examples,
     layerWeight: t.layerWeight,
-    breakdown: [...breakdown].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 6),
+    breakdown: [...breakdown].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 8),
   };
 }
 
@@ -270,40 +604,103 @@ const PATHWAY_DEFS: { id: string; name: string; promise: string; types: string[]
   { id: "skincare-first", name: "Skincare-first, colour later", promise: "Hydration and SPF carry the finish; one colour object signals effort.", types: ["tinted-spf", "tinted-balm", "cream-blush", "no-base"], tradeoff: "Coverage is essentially zero — good skincare has to do the work." },
   { id: "prep-led", name: "Prep-led base", promise: "Hydrating prep, then the thinnest base that still reads even.", types: ["hydrating-prep", "tinted-moisturiser", "hydrating-corrector", "liquid-blush"], tradeoff: "Costs a skincare step before any makeup decision." },
   { id: "definition-only", name: "Definition without base", promise: "Brow, liner, lash and lip. The complexion is left alone entirely.", types: ["no-base", "brow-pencil", "eyeliner-pencil", "satin-lipstick", "mascara"], tradeoff: "Tone is untouched, so the face reads styled rather than even." },
-  { id: "camera-diffuse", name: "Camera-diffuse", promise: "Blur and place rather than cover; powder only where the lens flares.", types: ["blur-balm", "serum-foundation", "blemish-concealer", "setting-powder", "cream-bronzer"], tradeoff: "Needs a light hand — the same kit cakes badly if applied heavily." },
+  { id: "camera-diffuse", name: "Camera-diffuse", promise: "Blur and place rather than cover; powder only where the lens flares.", types: ["blur-balm", "hd-blur", "serum-foundation", "blemish-concealer", "setting-powder"], tradeoff: "Needs a light hand — the same kit cakes badly if applied heavily." },
+  { id: "mature-flex", name: "Mature flexible film", promise: "Prep, serum tint, cream colour — nothing that settles into lines.", types: ["hydrating-prep", "tinted-moisturiser", "hydrating-corrector", "cream-blush", "lip-oil"], tradeoff: "Matte control and full opacity are off the table on purpose." },
+  { id: "deep-match", name: "Deep-band match first", promise: "Wide-range sheer-to-medium base, undertone-honest concealer, stain colour.", types: ["serum-foundation", "strategic-concealer", "liquid-blush", "brow-gel", "lip-stain"], tradeoff: "You will refuse short shade ranges even when the texture is pretty." },
+  { id: "rosacea-place", name: "Rosacea placement", promise: "Corrector and fragrance-aware sheer film; no full-face opacity reflex.", types: ["colour-corrector", "green-corrector", "tinted-moisturiser", "strategic-concealer", "brow-gel"], tradeoff: "Glow products that sit on inflamed texture stay out of the kit." },
+  { id: "sport-minimal", name: "Performance minimal", promise: "Tinted SPF or sport tint, stain colour, brows — sweat-honest.", types: ["sport-tint", "tinted-spf", "lip-stain", "brow-gel", "blotting-paper"], tradeoff: "No cream highlight, no powder rebuild, no dinner-proof glam stack." },
+  { id: "fragrance-guard", name: "Fragrance-guard capsule", promise: "Hard fragrance-free filters, short list, mineral-aware where possible.", types: ["tinted-spf", "strategic-concealer", "blotting-paper", "brow-gel"], tradeoff: "The shortlist is deliberately narrow — desire spends on texture, not range." },
 ];
 
 export function pathways(p: Profile, scored: TypeScore[]): Pathway[] {
   const map = new Map(scored.map((s) => [s.id, s]));
   return PATHWAY_DEFS.map((d) => {
     const parts = d.types.map((id) => map.get(id)!).filter(Boolean);
-    let fit = parts.reduce((s, x) => s + x.score, 0) / parts.length;
+    let fit = parts.reduce((s, x) => s + x.score, 0) / Math.max(parts.length, 1);
     const because: string[] = [];
-    const ledger: Contribution[] = [{ label: "Average product score", delta: Math.round(fit), note: `Mean of the ${parts.length} products on this pathway.` }];
-    const add = (label: string, delta: number, note: string) => {
+    const ledger: Contribution[] = [{ label: "Average product score", delta: Math.round(fit), note: `Mean of the ${parts.length} products on this pathway.`, weight: "mean(type scores)" }];
+    const add = (label: string, delta: number, note: string, weight?: string) => {
       fit += delta;
-      ledger.push({ label, delta: Math.round(delta), note });
+      ledger.push({ label, delta: Math.round(delta), note, ...(weight ? { weight } : {}) });
     };
 
     const layers = d.types.reduce((s, id) => s + (TYPE_MAP[id]?.layerWeight ?? 0), 0);
-    if (layers <= 3) { add("Low film count", 5, `Only ${layers} layers of opacity in the whole pathway.`); because.push(`Only ${layers} layers of opacity in the whole pathway.`); }
-    if (d.types.length > p.ceiling) { add("Over your ceiling", -(d.types.length - p.ceiling) * 6, `Needs ${d.types.length} products against your ceiling of ${p.ceiling}.`); because.push(`Needs ${d.types.length} products against your ceiling of ${p.ceiling}.`); }
-    else because.push(`Fits inside your ceiling of ${p.ceiling} products.`);
+    if (layers <= 3) {
+      add("Low film count", 5, `Only ${layers} layers of opacity in the whole pathway.`, "+5 if layers ≤ 3");
+      because.push(`Only ${layers} layers of opacity in the whole pathway.`);
+    }
+    if (d.types.length > p.ceiling) {
+      add("Over your ceiling", -(d.types.length - p.ceiling) * 6, `Needs ${d.types.length} products against your ceiling of ${p.ceiling}.`, "−6 per object over ceiling");
+      because.push(`Needs ${d.types.length} products against your ceiling of ${p.ceiling}.`);
+    } else because.push(`Fits inside your ceiling of ${p.ceiling} products.`);
 
     const minutes = d.types.reduce((s, id) => s + (TYPE_MAP[id]?.minutes ?? 0), 0);
     const upkeep = d.types.reduce((s, id) => s + (TYPE_MAP[id]?.upkeep ?? 0), 0);
-    if (minutes > p.timeBudget) { add("Over your minutes", -(minutes - p.timeBudget) * 1.6, `Runs about ${minutes} minutes against your ${p.timeBudget}.`); because.push(`Runs about ${minutes} minutes against your ${p.timeBudget}.`); }
-    else because.push(`Runs about ${minutes} minutes — inside your ${p.timeBudget}.`);
+    if (minutes > p.timeBudget) {
+      add("Over your minutes", -(minutes - p.timeBudget) * 1.6, `Runs about ${minutes} minutes against your ${p.timeBudget}.`, "−1.6 per minute over");
+      because.push(`Runs about ${minutes} minutes against your ${p.timeBudget}.`);
+    } else because.push(`Runs about ${minutes} minutes — inside your ${p.timeBudget}.`);
 
-    if (p.maintenance === 0 && upkeep >= 5) { add("Upkeep mismatch", -6, `Asks for ${upkeep} units of upkeep from someone who will not touch up.`); because.push("It asks for more re-application than you will give it."); }
-    if (p.desire >= 3 && ["spot-only", "definition-only"].includes(d.id)) { add("Desire mismatch", -8, "You want more ritual than this offers."); because.push("You want more ritual than this pathway offers."); }
-    if (p.desire <= 0 && ["event-definition", "camera-diffuse"].includes(d.id)) add("Low appetite", -10, "More steps than you are asking for.");
-    if (p.maintenance === 0 && d.id === "mineral-control") { add("Powder assumes upkeep", -6, "Powder control assumes some midday intervention."); because.push("Powder control assumes some midday intervention."); }
-    if ((p.climate === "altitude" || p.skin === "dry") && d.id === "mineral-control") { add("Dry air vs powder", -8, "Structurally at odds."); because.push("Dry air and powder are structurally at odds."); }
-    if ((p.climate === "altitude" || p.skin === "dry") && d.id === "prep-led") { add("Prep leverage", 8, "Prep is the correct first move on dehydrated skin."); because.push("Prep does the work your climate would otherwise undo."); }
-    if (p.outdoors >= 2 && (d.types.includes("tinted-spf") || d.types.includes("mineral-spf"))) { add("Carries UV strategy", 6, "SPF arrives without an extra step."); because.push("Carries your UV strategy without an extra step."); }
-    if (p.sensitivity >= 2 && layers <= 3) { add("Suits reactivity", 5, "Low film count suits reactive skin."); because.push("Low film count suits reactive skin."); }
-    if (p.concerns.includes("texture") && d.id === "camera-diffuse") { add("Texture handling", 6, "Diffusion beats coverage on visible texture."); because.push("Diffusion reads better on texture than opacity does."); }
+    if (p.maintenance === 0 && upkeep >= 5) {
+      add("Upkeep mismatch", -6, `Asks for ${upkeep} units of upkeep from someone who will not touch up.`, "−6");
+      because.push("It asks for more re-application than you will give it.");
+    }
+    if (p.desire >= 3 && ["spot-only", "definition-only", "sport-minimal"].includes(d.id)) {
+      add("Desire mismatch", -8, "You want more ritual than this offers.", "−8");
+      because.push("You want more ritual than this pathway offers.");
+    }
+    if (p.desire <= 0 && ["event-definition", "camera-diffuse"].includes(d.id)) add("Low appetite", -10, "More steps than you are asking for.", "−10");
+    if (p.maintenance === 0 && d.id === "mineral-control") {
+      add("Powder assumes upkeep", -6, "Powder control assumes some midday intervention.", "−6");
+      because.push("Powder control assumes some midday intervention.");
+    }
+    if ((p.climate === "altitude" || p.skin === "dry") && d.id === "mineral-control") {
+      add("Dry air vs powder", -8, "Structurally at odds.", "−8");
+      because.push("Dry air and powder are structurally at odds.");
+    }
+    if ((p.climate === "altitude" || p.skin === "dry" || has(p, "mature-skin")) && d.id === "prep-led") {
+      add("Prep leverage", 8, "Prep is the correct first move on dehydrated or mature skin.", "+8");
+      because.push("Prep does the work your climate would otherwise undo.");
+    }
+    if (p.outdoors >= 2 && (d.types.includes("tinted-spf") || d.types.includes("mineral-spf") || d.types.includes("sport-tint"))) {
+      add("Carries UV strategy", 6, "SPF arrives without an extra step.", "+6");
+      because.push("Carries your UV strategy without an extra step.");
+    }
+    if (p.sensitivity >= 2 && layers <= 3) {
+      add("Suits reactivity", 5, "Low film count suits reactive skin.", "+5");
+      because.push("Low film count suits reactive skin.");
+    }
+    if (p.concerns.includes("texture") && (d.id === "camera-diffuse" || d.id === "mature-flex")) {
+      add("Texture handling", 6, "Diffusion beats coverage on visible texture.", "+6");
+      because.push("Diffusion reads better on texture than opacity does.");
+    }
+    if ((has(p, "mature-skin") || p.concerns.includes("fine lines")) && d.id === "mature-flex") {
+      add("Mature path fit", 10, "Built for flexible films over powder stacks.", "+10");
+      because.push("This pathway was built for mature-skin architecture.");
+    }
+    if (p.depth >= 7 && d.id === "deep-match") {
+      add("Deep-band path fit", 10, "Match-first logic for deep and undertone-complex skin.", "+10");
+      because.push("Prioritises match and undertone over opacity.");
+    }
+    if ((has(p, "rosacea") || (p.sensitivity >= 2 && p.concerns.includes("redness"))) && d.id === "rosacea-place") {
+      add("Rosacea path fit", 12, "Placement over opacity for reactive redness.", "+12");
+      because.push("Corrector-first — the honest answer to mid-flare redness.");
+    }
+    if (has(p, "performance-sport") && d.id === "sport-minimal") {
+      add("Sport path fit", 12, "Sweat-honest object list.", "+12");
+      because.push("Designed for sweat, not for a powder rebuild.");
+    }
+    if ((has(p, "fragrance-sensitive") || p.filters.includes("fragranceFree")) && d.id === "fragrance-guard") {
+      add("Fragrance-guard fit", 10, "Short list, hard filters.", "+10");
+      because.push("Keeps the object count and fragrance surface area low.");
+    }
+    if (has(p, "hd-photo") && d.id === "camera-diffuse") {
+      add("HD path fit", 10, "Lens-first architecture.", "+10");
+      because.push("Blur and place — what HD light actually rewards.");
+    }
+    if (has(p, "minimalist") && ["one-stick", "definition-only", "spot-only"].includes(d.id)) {
+      add("Minimalist fit", 8, "Fewer objects, clearer jobs.", "+8");
+    }
 
     return {
       ...d,
@@ -328,9 +725,9 @@ export function tools(p: Profile, kit: Kit): ToolCall[] {
   };
 
   set("fingers", "essential", "Warmth thins cream and stick textures better than any brush. Fingers count as a tool here.");
-  set("damp-sponge", ids.has("skin-tint") || ids.has("light-foundation") || ids.has("full-foundation") ? "essential" : "optional",
+  set("damp-sponge", ids.has("skin-tint") || ids.has("light-foundation") || ids.has("full-foundation") || ids.has("sport-tint") ? "essential" : "optional",
     ids.has("full-foundation") ? "The only reliable way to press a heavier base thin instead of laying it on." : "Useful for sheering liquid bases; unnecessary if the kit is sticks and balms.");
-  set("concealer-brush", ids.has("strategic-concealer") || ids.has("colour-corrector") ? "essential" : "optional",
+  set("concealer-brush", ids.has("strategic-concealer") || ids.has("colour-corrector") || ids.has("green-corrector") ? "essential" : "optional",
     "Placed coverage needs a small tool, otherwise a spot becomes a patch.");
   set("powder-brush", ids.has("setting-powder") || ids.has("mineral-powder") ? "essential" : "probably unnecessary",
     ids.has("setting-powder") ? "A soft brush is what keeps powder strategic — two panels, not a full face." : "Nothing in this kit is a powder.");
@@ -342,8 +739,8 @@ export function tools(p: Profile, kit: Kit): ToolCall[] {
   set("spoolie", ids.has("brow-gel") ? "essential" : "optional", "Brows are the cheapest structure on the face and the spoolie is what makes them read groomed.");
   set("lash-curler", p.desire >= 2 || ids.has("mascara") ? "optional" : "probably unnecessary", "Adds openness with no product weight — worth it if you enjoy the ritual.");
   set("airbrush", "probably unnecessary", "Airbrush systems exist to deposit even opacity. That is the opposite of this brief.");
-  set("duo-fibre-brush", ids.has("serum-foundation") || ids.has("light-foundation") ? "optional" : "probably unnecessary",
-    ids.has("serum-foundation") || ids.has("light-foundation")
+  set("duo-fibre-brush", ids.has("serum-foundation") || ids.has("light-foundation") || ids.has("hd-blur") ? "optional" : "probably unnecessary",
+    ids.has("serum-foundation") || ids.has("light-foundation") || ids.has("hd-blur")
       ? "Stippling a medium base is how it stays a film instead of a coat."
       : "Nothing in this kit needs stippling.");
   set("mini-sponge", ids.has("blemish-concealer") || ids.has("strategic-concealer") ? "optional" : "probably unnecessary",
@@ -396,10 +793,11 @@ function bestIn(scored: TypeScore[], lane: string) {
 export function buildKit(p: Profile, scored: TypeScore[]): Kit {
   const picked: TypeScore[] = [];
   const laneCap: Record<string, number> = { base: 1, spot: 2, colour: 2, finish: 1, eye: 2, lip: 1, care: 0 };
-  if (p.coverage > 45 && (p.skin === "dry" || p.climate === "altitude" || p.climate === "dry")) laneCap["care"] = 1;
-  if (p.outdoors >= 2) laneCap["care"] = Math.max(laneCap["care"] ?? 0, 1);
+  if (p.coverage > 45 && (p.skin === "dry" || p.climate === "altitude" || p.climate === "dry" || has(p, "mature-skin"))) laneCap["care"] = 1;
+  if (p.outdoors >= 2 || has(p, "performance-sport")) laneCap["care"] = Math.max(laneCap["care"] ?? 0, 1);
   if (p.desire >= 3) laneCap["colour"] = 3;
   if (p.ceiling <= 4) { laneCap["colour"] = 1; laneCap["eye"] = 1; }
+  if (has(p, "rosacea") || has(p, "redness")) laneCap["spot"] = 3;
   const laneUsed: Record<string, number> = {};
   // Fill by architectural priority, not raw score, so the base and the
   // placement decisions are made before colour and finish spend the ceiling.
@@ -525,7 +923,7 @@ export function coach(p: Profile, a: Architecture, path: Pathway[], kit: Kit): {
 
   out.push({
     title: a.headline,
-    body: `${a.verdict} The heaviest single influence right now is ${top?.label.toLowerCase()}: ${top?.note.toLowerCase()}`,
+    body: `${a.verdict} The heaviest single influence right now is ${top?.label.toLowerCase()}: ${top?.note.toLowerCase()}${top?.weight ? ` Weight in the model: ${top.weight}.` : ""} Finish (skin-like) is simply 100 − pancake risk — currently ${a.skinlike}.`,
   });
 
   if (lead) {
@@ -559,10 +957,28 @@ export function coach(p: Profile, a: Architecture, path: Pathway[], kit: Kit): {
       body: `${kit.items.length} products cleared the bar. Resist filling the remaining slots: unused ceiling is what keeps the finish honest on a rushed morning.`,
     });
   }
-  if (p.sensitivity >= 2) {
+  if (p.sensitivity >= 2 || has(p, "fragrance-sensitive") || has(p, "rosacea")) {
     out.push({
       title: "Reactivity handled as architecture",
-      body: "Your hard filters were respected and the film count was cut rather than the brand list. This is education, not diagnosis — nothing here clears a product for reactive skin.",
+      body: "Your hard filters were respected and the film count was cut rather than the brand list. This is education, not diagnosis — nothing here clears a product for reactive skin. Open Claim literacy when a 'soothing' label is doing the selling.",
+    });
+  }
+  if (has(p, "mature-skin") || p.concerns.includes("fine lines")) {
+    out.push({
+      title: "Mature skin is a film problem",
+      body: "Powder and full opacity settle into lines under daylight. The desk is biasing you toward prep, flexible tints and cream colour — not because mature skin is fragile, but because cake reads worse on texture that already holds a crease.",
+    });
+  }
+  if (p.depth >= 7) {
+    out.push({
+      title: "Deep bands: match before layers",
+      body: "If a short range almost matches, the reflex is to add more product. That is how deep skin gets pancaked by a beige that was never right. Widen the range, check undertone (olive, red-leaning, deep-neutral), then keep the film thin.",
+    });
+  }
+  if (has(p, "performance-sport")) {
+    out.push({
+      title: "Sport is a transfer test",
+      body: "Sweat does not care about your prestige compact. Stain colour, tinted SPF, brows and blotting papers outperform any full-face matte that will be on your collar by mile three.",
     });
   }
   if (kit.tension >= 45) {
@@ -571,7 +987,7 @@ export function coach(p: Profile, a: Architecture, path: Pathway[], kit: Kit): {
       body: kit.tensionNote,
     });
   }
-  return out.slice(0, 6);
+  return out.slice(0, 7);
 }
 
 /* ─────────────── Orchestrator ─────────────── */
@@ -658,6 +1074,9 @@ export const SCENARIO_MOVES: ScenarioMoveDef[] = [
   { id: "sens-up", label: "Assume reactive skin", move: (p) => ({ ...p, sensitivity: 3 }), moveLabel: (p) => `Sensitivity ${p.sensitivity} → 3`, note: "Cuts films rather than brands.", applies: (p) => p.sensitivity < 3 },
   { id: "filter-mineral", label: "Add mineral filter", move: (p) => ({ ...p, filters: [...p.filters, "mineral" as const] }), moveLabel: () => "Filter added", note: "A preference, never a safety claim.", applies: (p) => !p.filters.includes("mineral") },
   { id: "outdoors-up", label: "Spend the day outdoors", move: (p) => ({ ...p, outdoors: 3 }), moveLabel: (p) => `Outdoors ${p.outdoors} → 3`, note: "SPF becomes the product's real job.", applies: (p) => p.outdoors < 3 },
+  { id: "depth-deep", label: "Set depth to deep", move: (p) => ({ ...p, depth: 9 }), moveLabel: (p) => `Depth ${p.depth} → 9`, note: "Match-first pressure rises; short ranges lose.", applies: (p) => p.depth < 8 },
+  { id: "goal-mature", label: "Add mature-skin goal", move: (p) => ({ ...p, goals: [...p.goals, "mature-skin"], concerns: p.concerns.includes("fine lines") ? p.concerns : [...p.concerns, "fine lines"] }), moveLabel: () => "Goal added", note: "Biases toward flexible cream films.", applies: (p) => !p.goals.includes("mature-skin") },
+  { id: "goal-sport", label: "Add performance/sport", move: (p) => ({ ...p, goals: [...p.goals, "performance-sport"], outdoors: Math.max(p.outdoors, 2) }), moveLabel: () => "Goal added", note: "Sweat-honest kit bias.", applies: (p) => !p.goals.includes("performance-sport") },
 ];
 
 export function availableMoves(p: Profile): ScenarioMoveDef[] {

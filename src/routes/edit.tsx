@@ -13,7 +13,17 @@ import {
   TYPE_MAP,
   UNDERTONES,
 } from "@/lib/mi/catalog";
-import { SCENARIO_MOVES, availableMoves, compareScenarios, runEdit, runEditTimed } from "@/lib/mi/engine";
+import {
+  SCENARIO_MOVES,
+  availableMoves,
+  compareScenarios,
+  runEdit,
+  runEditTimed,
+  SCORE_VARIABLES,
+  TYPE_SCORE_WEIGHTS,
+  BASE_RISK,
+} from "@/lib/mi/engine";
+import { CLAIMS } from "@/lib/mi/claims";
 import { downloadComparePacket } from "@/lib/mi/compare-packet";
 import { downloadFullPacket } from "@/lib/mi/full-packet";
 import { useI18n } from "@/lib/mi/i18n";
@@ -253,7 +263,7 @@ function EditRoute() {
             <div>
               <p className="eyebrow">{tr("edit.smartPaths")}</p>
               <h2 className="display mt-2 text-3xl md:text-4xl">
-                Nine ways in, <span className="gilt-text italic">each one honest about the trade</span>
+                Smart paths in, <span className="gilt-text italic">each one honest about the trade</span>
               </h2>
             </div>
             {previousProfile && (
@@ -563,6 +573,22 @@ function EditRoute() {
                   ))}
                 </div>
               </div>
+              <div className="mb-6 panel p-6">
+                <p className="text-[0.62rem] tracking-[0.26em] uppercase text-champagne">Score model · transparent</p>
+                <p className="display mt-2 text-2xl">
+                  Pancake risk = {BASE_RISK} + variables · finish (skin-like) = 100 − risk
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Live total {edit.architecture.risk} risk · {edit.architecture.skinlike} skin-like. Positive deltas raise pancake risk (and lower finish). Open Insights for every coefficient.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {SCORE_VARIABLES.slice(0, 8).map((v) => (
+                    <span key={v.id} className="border border-border px-3 py-1.5 text-[0.58rem] tracking-[0.16em] uppercase text-muted-foreground" title={v.weight}>
+                      {v.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
               <div className="mb-10 grid gap-4 sm:grid-cols-2">
                 {edit.architecture.contributions.map((c) => (
                   <div key={c.label} className="panel p-5">
@@ -572,6 +598,9 @@ function EditRoute() {
                         {c.delta > 0 ? `+${c.delta}` : c.delta}
                       </span>
                     </div>
+                    {c.weight && (
+                      <p className="mt-1 font-mono text-[0.58rem] tracking-[0.04em] text-champagne/90">weight · {c.weight}</p>
+                    )}
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{c.note}</p>
                   </div>
                 ))}
@@ -590,6 +619,9 @@ function EditRoute() {
                         <div className="mt-3">
                           <Meter value={(t.layerWeight / 3) * 100} label="Layer weight" right={`${t.layerWeight} / 3`} tone="oxblood" />
                         </div>
+                        <p className="mt-2 text-[0.58rem] tracking-[0.14em] uppercase text-muted-foreground">
+                          Fit from neutral 50 · see Insights for type-score weights
+                        </p>
                       </div>
                       <button
                         onClick={() => setOpenType(openType === t.id ? null : t.id)}
@@ -630,6 +662,34 @@ function EditRoute() {
                 ))}
               </div>
             </Section>
+          )}
+
+          
+          {stage === "Match" && (
+            <section className="mt-14 border-t border-border pt-12">
+              <p className="eyebrow">Claim literacy · makeup that borrows skincare language</p>
+              <h2 className="display mt-3 text-3xl md:text-4xl">
+                Named · dosed · tested · <span className="gilt-text italic">when not to buy</span>
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                SPF, treatment and hybrid claims do not thin a film. If the active is not named and dosed, you are buying mood.
+                Full cards live on Insights — a sample of the desk:
+              </p>
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {CLAIMS.slice(0, 4).map((c) => (
+                  <article key={c.id} className="border border-border p-5">
+                    <p className="text-[0.58rem] tracking-[0.22em] uppercase text-champagne">{c.kind}</p>
+                    <h3 className="display mt-2 text-xl">{c.claim}</h3>
+                    <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{c.verdict}</p>
+                    <p className="mt-3 text-[0.62rem] tracking-[0.18em] uppercase text-muted-foreground">When not to buy</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{c.whenNotToBuy}</p>
+                  </article>
+                ))}
+              </div>
+              <p className="mt-6 text-xs text-muted-foreground">
+                Type-score weights (sample): {TYPE_SCORE_WEIGHTS.slice(0, 3).map((w) => w.label).join(" · ")} — full table on Insights.
+              </p>
+            </section>
           )}
 
           {stage === "Compare" && (

@@ -25,7 +25,7 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
           style={{ transition: "stroke-dasharray 600ms cubic-bezier(0.16,1,0.3,1), stroke 400ms" }}
         />
       </svg>
-      <span className="sr-only">Pancake risk {arch.risk} out of 100</span>
+      <span className="sr-only">Pancake risk {arch.risk} out of 100 · finish skin-like {arch.skinlike}</span>
       <div>
         <p className="eyebrow">Pancake risk</p>
         <p className="display text-5xl leading-none" style={{ color: tone }}>
@@ -33,6 +33,11 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
         </p>
         <p className="display mt-1 text-2xl" style={{ color: tone }}>
           {arch.headline}
+        </p>
+        <p className="mt-2 text-[0.62rem] tracking-[0.2em] uppercase text-muted-foreground">
+          Finish · skin-like <span className="text-foreground tabular-nums">{arch.skinlike}</span>
+          <span className="mx-2 opacity-40">·</span>
+          base {arch.baseRisk ?? 30} + variables
         </p>
         {!compact && <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{arch.verdict}</p>}
       </div>
@@ -205,6 +210,9 @@ export function Ledger({ items, caption }: { items: Contribution[]; caption?: st
                 )}
               </div>
             </div>
+            {c.weight && (
+              <p className="mt-1 font-mono text-[0.58rem] tracking-[0.04em] text-champagne/90">weight · {c.weight}</p>
+            )}
             <p className="mt-1 text-[0.68rem] leading-snug text-muted-foreground">{c.note}</p>
           </div>
         );

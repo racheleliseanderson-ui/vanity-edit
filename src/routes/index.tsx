@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Page } from "@/components/mi/chrome";
 import { BRANDS, PRESETS, TYPES } from "@/lib/mi/catalog";
+import { CLAIMS } from "@/lib/mi/claims";
 import hero from "@/assets/hero-skin.jpg";
 import still from "@/assets/desk-still.jpg";
 
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring, alternative pathways, tool necessity and bag decisions matched to your skin, goals and lifestyle.",
+          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
       },
       { property: "og:title", content: "Makeup Intelligence · Vanity or Vice" },
       {
@@ -24,11 +25,12 @@ export const Route = createFileRoute("/")({
 });
 
 const ENGINES = [
-  { k: "I", t: "Makeup Match", b: "Goal-first product-type scoring, with layer weight penalised against your own dehydration and sebum load." },
-  { k: "II", t: "Alternative Finder", b: "Six pathways ranked live — sheer hybrid, spot-only, one-stick, mineral control, definition-led, skincare-first." },
+  { k: "I", t: "Makeup Match", b: "Goal-first product-type scoring, with layer weight penalised against your own dehydration and sebum load. Every coefficient is visible." },
+  { k: "II", t: "Alternative Finder", b: "Pathways ranked live — sheer hybrid, spot-only, one-stick, mineral control, mature flex, deep-band match, rosacea placement, sport minimal, and more." },
   { k: "III", t: "Tool Match", b: "Essential, optional, probably unnecessary — derived from the kit you actually earned. Fingers count." },
   { k: "IV", t: "Bag Edit", b: "Keep, use differently, replace when finished. No purge culture, ever." },
   { k: "V", t: "Build My Kit", b: "A complexity ceiling that refuses to be filled just because slots exist." },
+  { k: "VI", t: "Claim literacy", b: "SPF, treatment, hybrid and barrier claims on makeup — named, dosed, tested, and when not to buy." },
 ];
 
 function Index() {
@@ -53,8 +55,8 @@ function Index() {
           </h1>
           <p className="rise mt-8 max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
             Product <em className="italic text-foreground">types</em> — not brands — matched to your skin, goals,
-            lifestyle and maintenance tolerance. Live pancake-risk scoring. Alternative pathways with their trade-offs
-            named out loud. Architecture over cake.
+            lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. Alternative pathways
+            with their trade-offs out loud. Claim literacy for makeup that dresses as skincare. Architecture over cake.
           </p>
           <div className="rise mt-10 flex flex-wrap items-center gap-4">
             <Link
@@ -67,12 +69,15 @@ function Index() {
             <Link to="/desk" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
               The desk
             </Link>
+            <Link to="/insights" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
+              Claims & mechanics
+            </Link>
           </div>
           <div className="mt-14 grid max-w-3xl grid-cols-2 gap-y-6 border-t border-border pt-6 text-xs tracking-[0.18em] uppercase text-muted-foreground md:grid-cols-4">
             <span>{TYPES.length} product types</span>
             <span>{BRANDS.length} desk houses</span>
-            <span>Live risk scoring</span>
-            <span>Exportable edit packet</span>
+            <span>{PRESETS.length} smart paths</span>
+            <span>{CLAIMS.length} claim cards</span>
           </div>
         </div>
       </section>
@@ -88,7 +93,8 @@ function Index() {
             <div className="space-y-8">
               <p className="max-w-xl leading-[1.9] text-muted-foreground">
                 Wrong type plus too many layers equals a mask. The desk scores skin-like pathways first, then lets you
-                spend whatever appetite remains on definition rather than opacity.
+                spend whatever appetite remains on definition rather than opacity. Pancake risk starts at a base of 30;
+                finish (skin-like) is simply 100 minus risk — every variable is weighted in the open.
               </p>
               <div className="space-y-5">
                 {[
@@ -123,8 +129,8 @@ function Index() {
             <p className="display mt-4 text-4xl md:text-6xl">Start intelligent,<br />never blank</p>
           </div>
           <p className="max-w-sm text-sm leading-[1.9] text-muted-foreground">
-            A preset seeds goals, coverage appetite, ceiling and philosophy. Every field stays open to revision the
-            moment you arrive.
+            {PRESETS.length} presets seed goals, coverage appetite, ceiling and philosophy — mature skin, humid oily,
+            deep undertone, rosacea, fragrance-sensitive, minimalist, sport, HD, and the classics. Every field stays open.
           </p>
         </div>
 
@@ -154,7 +160,7 @@ function Index() {
         <img src={still} alt="Dark editorial still life of cream pigment, a gold compact and a spent blotting paper" loading="lazy" width={1600} height={1104} className="absolute inset-0 h-full w-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-background/72" />
         <div className="relative mx-auto max-w-[1400px] px-5 py-24 md:px-10">
-          <p className="eyebrow">Five engines · one profile</p>
+          <p className="eyebrow">Six engines · one profile</p>
           <p className="display mt-5 max-w-2xl text-4xl md:text-6xl">
             Every answer explains<br />
             <span className="gilt-text italic">why it scored that way</span>
@@ -176,6 +182,9 @@ function Index() {
         <p className="eyebrow">The seeded desk</p>
         <p className="display mt-4 max-w-2xl text-4xl md:text-6xl">
           Houses held as examples,<br />never as rankings
+        </p>
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          Drugstore, mid, prestige and luxury — each with an honest positioning note and what earns or loses the bag.
         </p>
         <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3">
           {BRANDS.map((b) => (

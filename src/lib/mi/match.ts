@@ -45,7 +45,12 @@ export function shadeFamily(p: Profile, product: DeskProduct): string | undefine
     "red-leaning": "red or mahogany side, not orange-yellow",
   };
   const lean = LEAN[p.undertone] ?? "neutral side";
-  const range = product.shades && product.shades >= 20 ? "the range is wide enough to split hairs" : "the range is short, so expect to blend";
+  const range =
+    product.shades && product.shades >= 30
+      ? "the range is wide enough to place deep and undertone-complex bands carefully"
+      : product.shades && product.shades >= 20
+        ? "the range is wide enough to split hairs"
+        : "the range is short, so expect to blend — and refuse to add layers to force a mismatch";
   return `Look in the ${family} band, ${lean} — ${range}.`;
 }
 
@@ -84,7 +89,33 @@ export function matchSlot(p: Profile, item: KitItem, limit = 3): Match[] {
         why.push("a short shade range for a base");
       }
 
+      // Deep + undertone pressure: reward wide maps harder
+      if (p.depth >= 7 && ["base", "spot"].includes(t?.lane ?? "")) {
+        if (product.shades && product.shades >= 30) {
+          fit += 8;
+          why.push("wide enough for deep-band matching without over-application");
+        } else if (product.shades && product.shades < 12) {
+          fit -= 10;
+          why.push("too short a range for deep-band match-first architecture");
+        }
+      }
+      if (["olive", "golden-olive", "red-leaning", "deep-neutral"].includes(p.undertone) && product.shades && product.shades >= 20) {
+        fit += 4;
+      }
+
       if ((t?.layerWeight ?? 0) <= 1) fit += 4;
+
+      // Claim literacy: SPF products get a nod when outdoors, not when indoor-only
+      if (product.claims?.includes("spf") && p.outdoors >= 2) {
+        fit += 5;
+        why.push("SPF claim is relevant on outdoor days — still reapply");
+      }
+      if (product.claims?.includes("spf") && p.outdoors <= 0) {
+        fit -= 3;
+      }
+      if (product.whenNot && p.sensitivity >= 2 && /fragrance|reactive|flare/i.test(product.whenNot)) {
+        fit -= 4;
+      }
 
       const shade = shadeFamily(p, product);
       return {
