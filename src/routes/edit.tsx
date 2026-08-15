@@ -58,6 +58,7 @@ import {
   type EditSearch,
 } from "@/lib/mi/share";
 import { FILM_COST, PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
+import { shareHead } from "@/lib/mi/seo";
 
 export const Route = createFileRoute("/edit")({
   validateSearch: (s: Record<string, unknown>) => parseEditSearch(s),
@@ -69,18 +70,12 @@ export const Route = createFileRoute("/edit")({
     if (s.vn) qs.set("path", s.vn);
     else if (s.via) qs.set("path", s.via);
     const image = `https://makeup.vanityvice.blog/api/og${qs.toString() ? `?${qs.toString()}` : ""}`;
-    return {
-      meta: [
-        { title: copy.title },
-        { name: "description", content: copy.description },
-        { property: "og:title", content: copy.title },
-        { property: "og:description", content: copy.description },
-        { property: "og:image", content: image },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:image", content: image },
-      ],
-    };
+    return shareHead("/edit", {
+      title: copy.title,
+      description: copy.description,
+      image,
+      imageAlt: copy.line,
+    });
   },
   component: EditRoute,
 });
@@ -321,7 +316,10 @@ function EditRoute() {
                   risk {edit.architecture.risk} · skin-like {edit.architecture.skinlike} · {edit.kit.layers} films ·{" "}
                   {edit.kit.minutes} min
                 </p>
-                <p className="mt-3 border-l border-champagne/50 pl-4 text-sm leading-relaxed text-foreground">{PANCAKE_DEF}</p>
+                <p className="mt-3 border-l border-champagne/50 pl-4 text-sm leading-relaxed text-foreground">
+                  <span className="block text-[0.62rem] tracking-[0.2em] uppercase text-champagne">Pancake makeup</span>
+                  <span className="mt-2 block">{PANCAKE_DEF}</span>
+                </p>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   This page scores skin, goals, lifestyle and tolerance, then returns pancake risk, a costed kit,{" "}
                   {PATHWAY_DEFS.length} alternative pathways, a wear forecast and a printable decision packet. Start from
@@ -597,6 +595,13 @@ function EditRoute() {
                     Packet ready · {edit.kit.items.length} objects · {edit.kit.minutes} min
                   </span>
                 </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadFullPacket(edit, committed, columns)}
+                className="tap flex min-h-11 shrink-0 items-center border border-champagne/60 px-2.5 text-[0.58rem] tracking-[0.16em] uppercase text-champagne transition-colors hover:bg-champagne/10 sm:px-3"
+              >
+                PDF
               </button>
               <ScrollRail label={tr("stage.tablist")} className="min-w-0 flex-1">
                 <div role="tablist" aria-label={tr("stage.tablist")} className="flex snap-x gap-1">
@@ -1431,7 +1436,7 @@ function EditRoute() {
                   onClick={() => window.print()}
                   className="inline-flex border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  Print this summary
+                  {tr("edit.print")}
                 </button>
                 <CopyLinkButton href={liveShare} />
               </div>

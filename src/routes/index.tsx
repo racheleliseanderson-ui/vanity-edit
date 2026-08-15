@@ -3,26 +3,13 @@ import { Page } from "@/components/mi/chrome";
 import { BRANDS, PRESETS, TYPES } from "@/lib/mi/catalog";
 import { CLAIMS } from "@/lib/mi/claims";
 import { PATHWAY_DEFS } from "@/lib/mi/engine";
+import { shareHead } from "@/lib/mi/seo";
 import { PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
 import hero from "@/assets/hero-skin.jpg";
 import still from "@/assets/desk-still.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Makeup Intelligence · The intelligent answer to pancake makeup" },
-      {
-        name: "description",
-        content:
-          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, wear & longevity forecast, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
-      },
-      { property: "og:title", content: "Makeup Intelligence · Vanity or Vice" },
-      {
-        property: "og:description",
-        content: "Architecture over cake. Desire is allowed — the finish still has to earn the bag.",
-      },
-    ],
-  }),
+  head: () => shareHead("/"),
   component: Index,
 });
 
@@ -57,7 +44,8 @@ function Index() {
             <span className="gilt-text italic">pancake<br />makeup</span>
           </h1>
           <p className="rise mt-6 max-w-xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">
-            {PANCAKE_DEF}
+            <span className="block text-[0.62rem] tracking-[0.2em] uppercase text-champagne">Pancake makeup</span>
+            <span className="mt-2 block">{PANCAKE_DEF}</span>
           </p>
           <p className="rise mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground">
             {TERMS.pancakeRisk} The page ends in a printable decision packet you can take to the counter.

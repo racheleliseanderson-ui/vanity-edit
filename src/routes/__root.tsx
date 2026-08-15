@@ -14,7 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../lib/mi/theme";
 import { A11yProvider } from "../lib/mi/a11y";
 import { I18nProvider } from "../lib/mi/i18n";
-import { PUBLICATION, shareHead } from "../lib/mi/seo";
+import { PUBLICATION } from "../lib/mi/seo";
 
 function NotFoundComponent() {
   return (
@@ -29,7 +29,7 @@ function NotFoundComponent() {
           className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[0.72rem] tracking-[0.22em] uppercase text-muted-foreground"
         >
           <Link to="/" className="transition-colors hover:text-champagne">
-            Salon
+            Home
           </Link>
           <Link to="/edit" className="transition-colors hover:text-champagne">
             The Edit
@@ -90,15 +90,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-const defaultShare = shareHead("/");
-
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "author", content: "Vanity or Vice" },
-      ...defaultShare.meta,
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -114,7 +111,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-      ...defaultShare.links,
     ],
   }),
   shellComponent: RootShell,
