@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Page } from "@/components/mi/chrome";
+import { Page, Term } from "@/components/mi/chrome";
+import { CopyLinkButton } from "@/components/mi/copy-link";
 import { InfoTip } from "@/components/mi/info-tip";
 import { RunConsole, type PipelineState } from "@/components/mi/run-console";
-import { Carousel, ConfirmButton, Sheet, useSwipe } from "@/components/mi/touch";
+import { ScrollRail } from "@/components/mi/scroll-rail";
+import { Carousel, ConfirmButton, useSwipe } from "@/components/mi/touch";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
 import {
   CONCERNS,
@@ -23,6 +25,7 @@ import {
   SCORE_VARIABLES,
   TYPE_SCORE_WEIGHTS,
   BASE_RISK,
+  PATHWAY_DEFS,
 } from "@/lib/mi/engine";
 import { CLAIMS } from "@/lib/mi/claims";
 import { downloadComparePacket } from "@/lib/mi/compare-packet";
@@ -45,20 +48,40 @@ import {
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 import { WearStage } from "@/components/mi/wear-stage";
 import { WEAR_PRESETS, defaultWearDay, runWear, type WearDay } from "@/lib/mi/wear";
-import { shareHead } from "@/lib/mi/seo";
+import {
+  buildShareSearch,
+  decodeProfile,
+  ogCardCopy,
+  parseEditSearch,
+  profileProgress,
+  shareUrl,
+  type EditSearch,
+} from "@/lib/mi/share";
+import { FILM_COST, PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
 
 export const Route = createFileRoute("/edit")({
-  validateSearch: (
-    s: Record<string, unknown>,
-  ): { path?: string | undefined; stage?: string | undefined; bag?: string | undefined; moves?: string | undefined } => {
-    const out: { path?: string; stage?: string; bag?: string; moves?: string } = {};
-    for (const k of ["path", "stage", "bag", "moves"] as const) {
-      const v = s[k];
-      if (typeof v === "string" && v) out[k] = v;
-    }
-    return out;
+  validateSearch: (s: Record<string, unknown>) => parseEditSearch(s),
+  head: ({ match }) => {
+    const s = (match.search ?? {}) as EditSearch;
+    const copy = ogCardCopy(s.r, s.vn ?? s.via);
+    const qs = new URLSearchParams();
+    if (s.r) qs.set("risk", s.r);
+    if (s.vn) qs.set("path", s.vn);
+    else if (s.via) qs.set("path", s.via);
+    const image = `https://makeup.vanityvice.blog/api/og${qs.toString() ? `?${qs.toString()}` : ""}`;
+    return {
+      meta: [
+        { title: copy.title },
+        { name: "description", content: copy.description },
+        { property: "og:title", content: copy.title },
+        { property: "og:description", content: copy.description },
+        { property: "og:image", content: image },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:image", content: image },
+      ],
+    };
   },
-  head: () => shareHead("/edit"),
   component: EditRoute,
 });
 
@@ -85,7 +108,8 @@ function EditRoute() {
   );
   const [profile, setProfile] = useState<Profile>(() => {
     const preset = PRESETS.find((p) => p.id === path);
-    const base: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}) };
+    const decoded = decodeProfile(search.p);
+    const base: Profile = { ...DEFAULT_PROFILE, ...(preset?.profile ?? {}), ...(decoded ?? {}) };
     return incomingBag.length ? { ...base, bag: [...new Set([...base.bag, ...incomingBag])] } : base;
   });
   const [stage, setStageState] = useState<Stage>(() =>
@@ -96,6 +120,10 @@ function EditRoute() {
     setStageState(s);
     void navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, stage: s === "Match" ? undefined : s }), replace: true });
   };
+  useEffect(() => {
+    const next = STAGES.includes(search.stage as Stage) ? (search.stage as Stage) : "Match";
+    setStageState((cur) => (cur === next ? cur : next));
+  }, [search.stage]);
   const [activePreset, setActivePreset] = useState<string | undefined>(path);
 
   /* Pipeline run management: `committed` is what the engine has actually scored. */
@@ -112,13 +140,24 @@ function EditRoute() {
   const [openPath, setOpenPath] = useState<string | null>(null);
   const [wearDay, setWearDay] = useState<WearDay>(() => defaultWearDay(profile));
   const [wearPreset, setWearPreset] = useState<string | undefined>();
+  const [faceOverride, setFaceOverride] = useState(false);
   const setWear = (patch: Partial<WearDay>) => {
     setWearDay((d) => ({ ...d, ...patch }));
     setWearPreset(undefined);
   };
   useEffect(() => {
-    setWearDay((d) => ({ ...d, owned: committed.bag }));
-  }, [committed.bag]);
+    setWearDay((d) => {
+      const seeded = defaultWearDay(committed);
+      if (faceOverride) return { ...d, owned: committed.bag };
+      return {
+        ...d,
+        skinType: seeded.skinType,
+        dehydration: seeded.dehydration,
+        reactivity: seeded.reactivity,
+        owned: committed.bag,
+      };
+    });
+  }, [committed, faceOverride]);
   const wear = useMemo(() => runWear(wearDay), [wearDay]);
   const [moves, setMovesState] = useState<string[]>(() =>
     search.moves ? search.moves.split(",").filter((m: string) => SCENARIO_MOVES.some((s) => s.id === m)) : ["coverage-down", "maint-up"],
@@ -226,6 +265,45 @@ function EditRoute() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
+  const progress = profileProgress(profile);
+  const liveShare = useMemo(() => {
+    const leading = edit.pathways[0];
+    return shareUrl(
+      buildShareSearch({
+        profile,
+        path: activePreset,
+        stage,
+        moves,
+        via: leading?.id,
+        viaName: leading?.name,
+        risk: edit.architecture.risk,
+      }),
+    );
+  }, [profile, activePreset, stage, moves, edit.pathways, edit.architecture.risk]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const leading = edit.pathways[0];
+      void navigate({
+        search: (prev: EditSearch) => ({
+          ...prev,
+          ...buildShareSearch({
+            profile: committed,
+            path: activePreset,
+            stage,
+            moves,
+            via: leading?.id,
+            viaName: leading?.name,
+            risk: edit.architecture.risk,
+          }),
+          set: loadedSet,
+        }),
+        replace: true,
+      });
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [committed, activePreset, stage, moves, edit.pathways, edit.architecture.risk, loadedSet, navigate]);
+
   return (
     <Page>
       {/* Preset rail + live instrument */}
@@ -233,7 +311,7 @@ function EditRoute() {
         <div className="mx-auto max-w-[1400px] px-5 py-14 md:px-10 md:py-20">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-end">
             <div className="min-w-0">
-              <p className="eyebrow">Step into the edit · Fifth Avenue, ground floor</p>
+              <p className="eyebrow">Score a sixteen-field profile · leave with a packet</p>
               <h1 className="marquee mt-4">
                 The<br />
                 <span className="gilt-text italic">Edit</span>
@@ -243,9 +321,11 @@ function EditRoute() {
                   risk {edit.architecture.risk} · skin-like {edit.architecture.skinlike} · {edit.kit.layers} films ·{" "}
                   {edit.kit.minutes} min
                 </p>
+                <p className="mt-3 border-l border-champagne/50 pl-4 text-sm leading-relaxed text-foreground">{PANCAKE_DEF}</p>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  Start from a smart path — each one already costed for pancake risk, objects and minutes — then revise
-                  every field underneath it. Nothing here flatters you. It scores you.
+                  This page scores skin, goals, lifestyle and tolerance, then returns pancake risk, a costed kit,{" "}
+                  {PATHWAY_DEFS.length} alternative pathways, a wear forecast and a printable decision packet. Start from
+                  a smart path — each one already costed — then revise every field. Nothing here flatters you. It scores you.
                 </p>
               </div>
             </div>
@@ -259,6 +339,7 @@ function EditRoute() {
                 <Stat k="Films" v={`${edit.kit.layers}`} />
                 <Stat k="Tension" v={`${edit.kit.tension}`} />
               </div>
+              <Term name="Kit tension">{TERMS.kitTension}</Term>
             </div>
           </div>
         </div>
@@ -334,7 +415,7 @@ function EditRoute() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-[1400px] gap-12 px-5 py-14 md:px-10 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+      <div className="mx-auto grid min-w-0 max-w-[1400px] grid-cols-1 gap-12 px-5 py-14 md:px-10 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
         {/* Instrument panel — a drawer on small screens, a sticky rail from lg up */}
         <div className="no-print lg:hidden">
           <button
@@ -355,7 +436,25 @@ function EditRoute() {
           id="instrument-panel"
           className={`no-print space-y-10 ${panelOpen ? "" : "hidden"} lg:block lg:sticky lg:top-[110px] lg:max-h-[calc(100vh-140px)] lg:self-start lg:space-y-10 lg:overflow-y-auto lg:pr-4`}
         >
-          <Group title="Goals" note="Pick as many as are true.">
+          <div className="border border-champagne/40 bg-champagne/[0.05] px-4 py-4">
+            <p className="text-[0.62rem] tracking-[0.24em] uppercase text-champagne">
+              {progress.done} of {progress.total} fields personalised
+            </p>
+            <div className="mt-3 h-[3px] w-full bg-secondary">
+              <div
+                className="h-full"
+                style={{
+                  width: `${(progress.done / progress.total) * 100}%`,
+                  background: "var(--gradient-champagne)",
+                }}
+              />
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              Sixteen fields across seven groups. The three that move the score first:{" "}
+              <span className="text-champagne">{progress.hottest.join(" · ")}</span>.
+            </p>
+          </div>
+          <Group title="Goals" note="Pick as many as are true." hot>
             <div className="grid gap-2">
               {GOALS.map((g) => (
                 <Chip key={g.id} active={profile.goals.includes(g.id)} note={g.note} onClick={() => set({ goals: toggle(profile.goals, g.id) })}>
@@ -365,7 +464,7 @@ function EditRoute() {
             </div>
           </Group>
 
-          <Group title="Skin" note="Type, reactivity and what you notice.">
+          <Group title="Skin" note="Type, reactivity and what you notice." hot>
             <div className="grid grid-cols-2 gap-2">
               {SKINS.map((s) => (
                 <Chip key={s} active={profile.skin === s} onClick={() => set({ skin: s })}>
@@ -419,6 +518,7 @@ function EditRoute() {
               onChange={(n) => set({ desire: n })}
             />
             <Slider label="Coverage appetite" hint={`${profile.coverage} / 100`} value={profile.coverage} onChange={(n) => set({ coverage: n })} />
+            <p className="text-[0.58rem] tracking-[0.18em] uppercase text-champagne">Matters most · coverage appetite</p>
             <Slider label="Complexity ceiling" hint={`${profile.ceiling} objects`} min={3} max={12} value={profile.ceiling} onChange={(n) => set({ ceiling: n })} />
           </Group>
 
@@ -482,35 +582,53 @@ function EditRoute() {
         </aside>
 
         {/* Output */}
-        <div>
-          <div
-            role="tablist"
-            aria-label="Stages of the edit"
-            className="no-print sticky top-[86px] z-20 -mx-5 mb-10 flex snap-x gap-1 overflow-x-auto border-b border-border bg-background/90 px-5 py-2 backdrop-blur-xl md:mx-0 md:px-0"
-          >
-            {STAGES.map((s, i) => (
+        <div className="min-w-0">
+          <div className="no-print sticky top-[86px] z-20 -mx-5 mb-10 border-b border-champagne/30 bg-background/90 px-5 py-2 backdrop-blur-xl md:mx-0 md:px-0">
+            <div className="flex min-w-0 items-center gap-2">
               <button
-                key={s}
-                role="tab"
-                id={`stage-tab-${s}`}
-                aria-selected={stage === s}
-                aria-controls="stage-panel"
-                tabIndex={stage === s ? 0 : -1}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                onKeyDown={(e) => onTabKey(e, i)}
-                onClick={() => setStage(s)}
-                className={`flex min-h-11 snap-start items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
-                  stage === s
-                    ? "border-champagne text-champagne"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
+                type="button"
+                onClick={() => setStage("Packet")}
+                className="min-h-11 max-w-[42%] shrink-0 border border-champagne/40 bg-champagne/[0.06] px-2 text-left sm:max-w-none sm:px-3"
               >
-                <span className="opacity-50">{String(i + 1).padStart(2, "0")}</span>
-                {s}
+                <span className="block text-[0.52rem] tracking-[0.2em] uppercase text-champagne">Your packet</span>
+                <span className="block text-[0.68rem] text-foreground">
+                  <span className="sm:hidden">{edit.kit.items.length} obj · {edit.kit.minutes} min</span>
+                  <span className="hidden sm:inline">
+                    Packet ready · {edit.kit.items.length} objects · {edit.kit.minutes} min
+                  </span>
+                </span>
               </button>
-            ))}
+              <ScrollRail label={tr("stage.tablist")} className="min-w-0 flex-1">
+                <div role="tablist" aria-label={tr("stage.tablist")} className="flex snap-x gap-1">
+              {STAGES.map((s, i) => (
+                <button
+                  key={s}
+                  role="tab"
+                  id={`stage-tab-${s}`}
+                  aria-selected={stage === s}
+                  aria-controls="stage-panel"
+                  tabIndex={stage === s ? 0 : -1}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
+                  onKeyDown={(e) => onTabKey(e, i)}
+                  onClick={() => setStage(s)}
+                  className={`flex min-h-11 snap-start items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2 text-[0.68rem] tracking-[0.24em] uppercase transition-colors ${
+                    stage === s
+                      ? "border-champagne text-champagne"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span className="opacity-50">{String(i + 1).padStart(2, "0")}</span>
+                  {s}
+                </button>
+              ))}
+                </div>
+              </ScrollRail>
+              <div className="hidden shrink-0 sm:block">
+                <CopyLinkButton href={liveShare} className="px-4 py-0" />
+              </div>
+            </div>
           </div>
           <div id="stage-panel" role="tabpanel" aria-labelledby={`stage-tab-${stage}`} {...swipe}>
           <div className="no-print mb-6 flex items-center justify-between gap-3 md:hidden">
@@ -535,7 +653,7 @@ function EditRoute() {
           </p>
 
           {stage === "Match" && (
-            <Section title="Makeup Match" lead="Product types scored against your profile. Layer weight is penalised, not celebrated.">
+            <Section title="Makeup Match" lead="Product types scored against your profile. Film cost is penalised, not celebrated. The packet at the end names the kit, prices and reasoning — print it or send the link.">
               <div className="panel mb-10 p-7">
                 <p className="eyebrow">Move one input</p>
                 <h3 className="display mt-2 text-3xl">What each adjustment would actually cost you</h3>
@@ -590,7 +708,11 @@ function EditRoute() {
                   Pancake risk = {BASE_RISK} + variables · finish (skin-like) = 100 − risk
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  Live total {edit.architecture.risk} risk · {edit.architecture.skinlike} skin-like. Positive deltas raise pancake risk (and lower finish). Open Insights for every coefficient.
+                  Live total {edit.architecture.risk} risk · {edit.architecture.skinlike} skin-like. Positive deltas raise pancake risk (and lower finish).{" "}
+                  <Link to="/insights" className="text-champagne underline-offset-4 hover:underline">
+                    Open Insights
+                  </Link>{" "}
+                  for every coefficient.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {SCORE_VARIABLES.slice(0, 8).map((v) => (
@@ -636,11 +758,17 @@ function EditRoute() {
                       <div className="mt-4 max-w-xs">
                         <Meter value={t.score} label="Fit" right={`${t.score}`} tone={t.tier === "hold" ? "oxblood" : "champagne"} />
                         <div className="mt-3">
-                          <Meter value={(t.layerWeight / 3) * 100} label="Layer weight" right={`${t.layerWeight} / 3`} tone="oxblood" />
+                          <Meter value={(t.layerWeight / 3) * 100} label={FILM_COST} right={`${t.layerWeight} / 3`} tone="oxblood" />
                         </div>
                         <p className="mt-2 text-[0.58rem] tracking-[0.14em] uppercase text-muted-foreground">
-                          Fit from neutral 50 · see Insights for type-score weights
+                          Fit from a neutral baseline of 50 ·{" "}
+                          <Link to="/insights" className="text-champagne underline-offset-4 hover:underline">
+                            see Insights
+                          </Link>{" "}
+                          for type-score weights
                         </p>
+                        <Term name="Fit">{TERMS.fit}</Term>
+                        <Term name={FILM_COST}>{TERMS.filmCost}</Term>
                       </div>
                       <button
                         onClick={() => setOpenType(openType === t.id ? null : t.id)}
@@ -692,7 +820,11 @@ function EditRoute() {
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 SPF, treatment and hybrid claims do not thin a film. If the active is not named and dosed, you are buying mood.
-                Full cards live on Insights — a sample of the desk:
+                Full cards live on{" "}
+                <Link to="/insights" className="text-champagne underline-offset-4 hover:underline">
+                  Insights
+                </Link>{" "}
+                — a sample of the desk:
               </p>
               <div className="mt-8 grid gap-4 md:grid-cols-2">
                 {CLAIMS.slice(0, 4).map((c) => (
@@ -706,7 +838,11 @@ function EditRoute() {
                 ))}
               </div>
               <p className="mt-6 text-xs text-muted-foreground">
-                Type-score weights (sample): {TYPE_SCORE_WEIGHTS.slice(0, 3).map((w) => w.label).join(" · ")} — full table on Insights.
+                Type-score weights (sample): {TYPE_SCORE_WEIGHTS.slice(0, 3).map((w) => w.label).join(" · ")} —{" "}
+                <Link to="/insights" className="text-champagne underline-offset-4 hover:underline">
+                  full table on Insights
+                </Link>
+                .
               </p>
             </section>
           )}
@@ -750,8 +886,11 @@ function EditRoute() {
                   <p className="eyebrow">Scenario sets</p>
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                     Name this selection and it stays in this browser for next time. Loading a set updates the address bar
-                    too, so it travels.
+                    too, so it travels — use Copy link.
                   </p>
+                  <div className="mt-4">
+                    <CopyLinkButton href={liveShare} label="Copy link" />
+                  </div>
                   {sets.length > 0 && (
                     <ul className="mt-5 grid list-none gap-3 p-0">
                       {sets.map((s, i) => (
@@ -850,6 +989,7 @@ function EditRoute() {
                     >
                       Export the compare packet
                     </button>
+                    <CopyLinkButton href={liveShare} label="Copy link" className="px-5 py-2" />
                   </div>
                   <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <label className="block">
@@ -886,8 +1026,9 @@ function EditRoute() {
               <p className="no-print mt-6 text-[0.62rem] tracking-[0.22em] uppercase text-muted-foreground md:hidden">
                 Swipe the columns sideways · changed lines are marked
               </p>
-              <div className="-mx-5 mt-8 flex snap-x gap-5 overflow-x-auto px-5 pb-3 md:mx-0 md:px-0">
-                <div className="flex gap-5">
+              <div className="mt-8">
+                <ScrollRail label="Scenario columns">
+                  <div className="flex gap-5">
                   {columns.map((c) => (
                     <article
                       key={c.id}
@@ -921,7 +1062,7 @@ function EditRoute() {
                           )}
                         </div>
                         <p className="mt-1 text-[0.6rem] tracking-[0.24em] uppercase text-muted-foreground">
-                          Pancake risk · skin-like {c.skinlike}
+                          Profile pancake risk · skin-like {c.skinlike}
                         </p>
                         <div className="mt-4 space-y-3">
                           <Meter value={c.risk} label="Risk" right={`${c.risk}`} tone={c.risk > 50 ? "oxblood" : "champagne"} />
@@ -1011,12 +1152,13 @@ function EditRoute() {
                     </article>
                   ))}
                 </div>
+                </ScrollRail>
               </div>
             </Section>
           )}
 
           {stage === "Alternatives" && (
-            <Section title="Alternative pathways" lead="Nine routes to the same intention. Each one names what it trades away.">
+            <Section title="Alternative pathways" lead={`${edit.pathways.length} routes to the same intention. Each one names what it trades away.`}>
               <div className="panel mb-10 p-6 md:p-8">
                 <p className="eyebrow">Set two beside each other</p>
                 <h3 className="display mt-2 text-3xl">Compare pathways on fit, films, minutes and upkeep</h3>
@@ -1075,6 +1217,7 @@ function EditRoute() {
                       </div>
                       <div className="w-full max-w-[220px]">
                         <Meter value={p.fit} label="Fit" right={`${p.fit} / 100`} />
+                        <Term name="Fit">{TERMS.fit}</Term>
                         <p className="mt-3 text-[0.62rem] tracking-[0.2em] uppercase text-muted-foreground">
                           {p.types.length} objects · {p.layers} films · {p.minutes} min
                         </p>
@@ -1129,14 +1272,27 @@ function EditRoute() {
               wearDay={wearDay}
               wearPreset={wearPreset}
               setWear={setWear}
-              onSeedFromProfile={() => {
+              profile={committed}
+              faceOverride={faceOverride}
+              onFaceOverride={setFaceOverride}
+              onResetDayBrief={() => {
                 setWearDay(defaultWearDay(committed));
                 setWearPreset(undefined);
+                setFaceOverride(false);
               }}
               onApplyPreset={(id) => {
                 const p = WEAR_PRESETS.find((x) => x.id === id);
                 if (!p) return;
-                setWearDay((d) => ({ ...defaultWearDay(committed), ...p.day, owned: d.owned }));
+                const seeded = defaultWearDay(committed);
+                const { skinType: _s, dehydration: _d, reactivity: _r, ...dayRest } = p.day;
+                setWearDay((d) => ({
+                  ...seeded,
+                  ...dayRest,
+                  skinType: faceOverride ? (p.day.skinType ?? d.skinType) : seeded.skinType,
+                  dehydration: faceOverride ? (p.day.dehydration ?? d.dehydration) : seeded.dehydration,
+                  reactivity: faceOverride ? (p.day.reactivity ?? d.reactivity) : seeded.reactivity,
+                  owned: d.owned,
+                }));
                 setWearPreset(id);
               }}
             />
@@ -1210,7 +1366,7 @@ function EditRoute() {
                     <span className="display text-champagne text-xl">{String(i + 1).padStart(2, "0")}</span>
                     <div>
                       <h3 className="display text-2xl">{it.label}</h3>
-                      <p className="mt-1 text-xs tracking-[0.2em] uppercase text-muted-foreground">Layer weight {it.layerWeight}</p>
+                      <p className="mt-1 text-xs tracking-[0.2em] uppercase text-muted-foreground">{FILM_COST} {it.layerWeight}</p>
                       <p className="mt-3 text-sm text-muted-foreground">{it.job}</p>
                       <ConfirmButton
                         onPress={() => addToBag([it.id])}
@@ -1277,10 +1433,11 @@ function EditRoute() {
                 >
                   Print this summary
                 </button>
+                <CopyLinkButton href={liveShare} />
               </div>
               <p className="no-print mb-10 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 The decision packet is a single self-contained file: the call itself, then your inputs, the architecture ledger, every scored
-                product type, all nine pathways, tools, bag calls, coaching, the costed single moves and the{" "}
+                product type, all {edit.pathways.length} pathways, tools, bag calls, coaching, the costed single moves and the{" "}
                 {columns.length} scenario{columns.length === 1 ? "" : "s"} you have lined up — with named formulas and
                 prices beside each kit object. Open it anywhere, or print it to PDF.
               </p>
@@ -1299,6 +1456,7 @@ function EditRoute() {
                 </div>
                 <div>
                   <p className="eyebrow">Architecture</p>
+                  <Term name="Architecture">{TERMS.architecture}</Term>
                   <p className="mt-3 max-w-2xl leading-[1.85] text-muted-foreground">{edit.architecture.verdict}</p>
                   <p className="mt-3 max-w-2xl text-sm leading-[1.85] text-muted-foreground">{edit.kit.tensionNote}</p>
                 </div>
@@ -1398,11 +1556,14 @@ function EditRoute() {
   );
 }
 
-function Group({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
+function Group({ title, note, children, hot }: { title: string; note: string; children: React.ReactNode; hot?: boolean }) {
   return (
     <section className="space-y-4">
       <div className="border-b border-border pb-3">
-        <h2 className="display text-2xl">{title}</h2>
+        <h2 className="display text-2xl">
+          {title}
+          {hot && <span className="ml-2 text-[0.55rem] tracking-[0.2em] uppercase text-champagne">matters most</span>}
+        </h2>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{note}</p>
       </div>
       {children}

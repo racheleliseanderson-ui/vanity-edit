@@ -14,6 +14,7 @@ import { Route as DeskRouteImport } from './routes/desk'
 import { Route as EditRouteImport } from './routes/edit'
 import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as ApiOgRouteImport } from './routes/api/og'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgRoute = ApiOgRouteImport.update({
+  id: '/api/og',
+  path: '/api/og',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/edit': typeof EditRoute
   '/insights': typeof InsightsRoute
   '/products': typeof ProductsRoute
+  '/api/og': typeof ApiOgRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/edit': typeof EditRoute
   '/insights': typeof InsightsRoute
   '/products': typeof ProductsRoute
+  '/api/og': typeof ApiOgRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,14 @@ export interface FileRoutesById {
   '/edit': typeof EditRoute
   '/insights': typeof InsightsRoute
   '/products': typeof ProductsRoute
+  '/api/og': typeof ApiOgRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/desk' | '/edit' | '/insights' | '/products'
+  fullPaths: '/' | '/desk' | '/edit' | '/insights' | '/products' | '/api/og'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/desk' | '/edit' | '/insights' | '/products'
-  id: '__root__' | '/' | '/desk' | '/edit' | '/insights' | '/products'
+  to: '/' | '/desk' | '/edit' | '/insights' | '/products' | '/api/og'
+  id: '__root__' | '/' | '/desk' | '/edit' | '/insights' | '/products' | '/api/og'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +86,7 @@ export interface RootRouteChildren {
   EditRoute: typeof EditRoute
   InsightsRoute: typeof InsightsRoute
   ProductsRoute: typeof ProductsRoute
+  ApiOgRoute: typeof ApiOgRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og': {
+      id: '/api/og'
+      path: '/api/og'
+      fullPath: '/api/og'
+      preLoaderRoute: typeof ApiOgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +142,7 @@ const rootRouteChildren: RootRouteChildren = {
   EditRoute: EditRoute,
   InsightsRoute: InsightsRoute,
   ProductsRoute: ProductsRoute,
+  ApiOgRoute: ApiOgRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -2,17 +2,32 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Page } from "@/components/mi/chrome";
 import { BRANDS, PRESETS, TYPES } from "@/lib/mi/catalog";
 import { CLAIMS } from "@/lib/mi/claims";
-import { shareHead } from "@/lib/mi/seo";
+import { PATHWAY_DEFS } from "@/lib/mi/engine";
+import { PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
 import hero from "@/assets/hero-skin.jpg";
 import still from "@/assets/desk-still.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => shareHead("/"),
+  head: () => ({
+    meta: [
+      { title: "Makeup Intelligence · The intelligent answer to pancake makeup" },
+      {
+        name: "description",
+        content:
+          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, wear & longevity forecast, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
+      },
+      { property: "og:title", content: "Makeup Intelligence · Vanity or Vice" },
+      {
+        property: "og:description",
+        content: "Architecture over cake. Desire is allowed — the finish still has to earn the bag.",
+      },
+    ],
+  }),
   component: Index,
 });
 
 const ENGINES = [
-  { k: "I", t: "Makeup Match", b: "Goal-first product-type scoring, with layer weight penalised against your own dehydration and sebum load. Every coefficient is visible." },
+  { k: "I", t: "Makeup Match", b: "Goal-first product-type scoring, with film cost penalised against your own dehydration and sebum load. Every coefficient is visible." },
   { k: "II", t: "Alternative Finder", b: "Pathways ranked live — sheer hybrid, spot-only, one-stick, mineral control, mature flex, deep-band match, rosacea placement, sport minimal, and more." },
   { k: "III", t: "Tool Match", b: "Essential, optional, probably unnecessary — derived from the kit you actually earned. Fingers count." },
   { k: "IV", t: "Bag Edit", b: "Keep, use differently, replace when finished. No purge culture, ever." },
@@ -41,10 +56,16 @@ function Index() {
             The intelligent<br />answer to{" "}
             <span className="gilt-text italic">pancake<br />makeup</span>
           </h1>
-          <p className="rise mt-8 max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
+          <p className="rise mt-6 max-w-xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">
+            {PANCAKE_DEF}
+          </p>
+          <p className="rise mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground">
+            {TERMS.pancakeRisk} The page ends in a printable decision packet you can take to the counter.
+          </p>
+          <p className="rise mt-6 max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
             Product <em className="italic text-foreground">types</em> — not brands — matched to your skin, goals,
-            lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. Alternative pathways
-            with their trade-offs out loud. Wear forecast for the hours you actually live. Claim literacy for makeup that dresses as skincare. Architecture over cake.
+            lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. {PATHWAY_DEFS.length} alternative
+            pathways with their trade-offs out loud. Wear forecast for the hours you actually live. Claim literacy for makeup that dresses as skincare. The page ends in a printable decision packet: named products, real prices, reasoning attached. Architecture over cake.
           </p>
           <div className="rise mt-10 flex flex-wrap items-center gap-4">
             <Link
@@ -89,7 +110,8 @@ function Index() {
               <p className="max-w-xl leading-[1.9] text-muted-foreground">
                 Wrong type plus too many layers equals a mask. The desk scores skin-like pathways first, then lets you
                 spend whatever appetite remains on definition rather than opacity. Pancake risk starts at a base of 30;
-                finish (skin-like) is simply 100 minus risk — every variable is weighted in the open.
+                finish (skin-like) is simply 100 minus risk — every variable is weighted in the open. Architecture is how
+                the kit is structured — placement and film order — rather than how much opacity it carries.
               </p>
               <div className="space-y-5">
                 {[
@@ -183,9 +205,14 @@ function Index() {
         </p>
         <div className="mt-10 flex flex-wrap gap-x-8 gap-y-3">
           {BRANDS.map((b) => (
-            <span key={b.name} className="display text-2xl text-muted-foreground transition-colors hover:text-champagne md:text-3xl">
+            <Link
+              key={b.name}
+              to="/desk"
+              search={{ house: b.name }}
+              className="display text-2xl text-muted-foreground transition-colors hover:text-champagne md:text-3xl"
+            >
               {b.name}
-            </span>
+            </Link>
           ))}
         </div>
         <Link to="/desk" className="mt-12 inline-flex border border-champagne/50 px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-champagne transition-colors hover:bg-champagne hover:text-accent-foreground">

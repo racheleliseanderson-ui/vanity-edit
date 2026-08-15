@@ -69,7 +69,7 @@ export function buildMakeupSuitePacket(
   const items = edit.kit.items.slice(0, 6).map((it) => ({
     name: it.label,
     job: it.job || "Makeup / finish",
-    expected: it.example || `From Makeup Edit · layer ${it.layerWeight}`,
+    expected: it.example || `From Makeup Edit · film cost ${it.layerWeight}`,
     evidence: "Finished formula",
     decision: "keep",
   }));

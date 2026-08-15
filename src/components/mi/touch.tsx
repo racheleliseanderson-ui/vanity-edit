@@ -109,32 +109,89 @@ export function Sheet({
   );
 }
 
-/** Snap carousel with edge fade and position dots. */
+/** Snap carousel with edge fades, arrows and position dots. */
 export function Carousel({ count, label, children }: { count: number; label: string; children: ReactNode }) {
   const rail = useRef<HTMLDivElement>(null);
   const [at, setAt] = useState(0);
+  const [moreLeft, setMoreLeft] = useState(false);
+  const [moreRight, setMoreRight] = useState(false);
+
+  const measure = (el?: HTMLDivElement | null) => {
+    const node = el ?? rail.current;
+    if (!node) return;
+    const max = node.scrollWidth - node.clientWidth;
+    setMoreLeft(node.scrollLeft > 8);
+    setMoreRight(max - node.scrollLeft > 8);
+    const per = node.scrollWidth / Math.max(1, count);
+    setAt(Math.min(count - 1, Math.max(0, Math.round(node.scrollLeft / per))));
+  };
+
+  useEffect(() => {
+    measure();
+    const el = rail.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(el);
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
+  }, [count]);
+
+  const jump = (dir: -1 | 1) => {
+    const el = rail.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(200, el.clientWidth * 0.7), behavior: "smooth" });
+  };
 
   return (
     <div className="relative">
+      {moreLeft && (
+        <button
+          type="button"
+          aria-label="Previous paths"
+          onClick={() => jump(-1)}
+          className="absolute left-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center border border-border bg-background/90 text-champagne sm:flex"
+        >
+          ←
+        </button>
+      )}
       <div
         ref={rail}
         role="group"
         aria-label={label}
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const per = el.scrollWidth / Math.max(1, count);
-          setAt(Math.min(count - 1, Math.max(0, Math.round(el.scrollLeft / per))));
-        }}
+        onScroll={(e) => measure(e.currentTarget)}
         className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain px-5 pb-3 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ scrollBehavior: "smooth" }}
       >
         {children}
       </div>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute right-0 top-0 hidden h-[calc(100%-1rem)] w-14 max-md:block"
-        style={{ background: "linear-gradient(90deg, transparent, var(--background))" }}
-      />
+      {moreLeft && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 w-10"
+          style={{ background: "linear-gradient(90deg, var(--background), transparent)" }}
+        />
+      )}
+      {moreRight && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-14"
+          style={{ background: "linear-gradient(270deg, var(--background), transparent)" }}
+        />
+      )}
+      {moreRight && (
+        <button
+          type="button"
+          aria-label="More paths"
+          onClick={() => jump(1)}
+          className="absolute right-0 top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center border border-border bg-background/90 text-champagne sm:flex"
+        >
+          →
+        </button>
+      )}
       {count > 1 && (
         <div className="mt-3 flex justify-center gap-2 md:hidden">
           {Array.from({ length: count }).map((_, i) => (

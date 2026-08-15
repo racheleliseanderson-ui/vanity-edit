@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Chip, DeltaNumber, Meter, Slider } from "@/components/mi/viz";
-import type { SkinType } from "@/lib/mi/types";
+import type { Profile, SkinType } from "@/lib/mi/types";
+import { TERMS } from "@/lib/mi/vocab";
 import {
   WEAR_INTENTS,
   WEAR_PRESETS,
@@ -55,14 +56,20 @@ export function WearStage({
   wearDay,
   wearPreset,
   setWear,
-  onSeedFromProfile,
+  profile,
+  faceOverride,
+  onFaceOverride,
+  onResetDayBrief,
   onApplyPreset,
 }: {
   wear: WearReading;
   wearDay: WearDay;
   wearPreset?: string | undefined;
   setWear: (patch: Partial<WearDay>) => void;
-  onSeedFromProfile: () => void;
+  profile: Profile;
+  faceOverride: boolean;
+  onFaceOverride: (on: boolean) => void;
+  onResetDayBrief: () => void;
   onApplyPreset: (id: string) => void;
 }) {
   const [openWearScore, setOpenWearScore] = useState<string | null>(null);
@@ -78,17 +85,12 @@ export function WearStage({
           <p className="eyebrow">Day brief · live</p>
           <h3 className="display mt-2 text-3xl md:text-4xl">{wear.headline}</h3>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Set the hours, climate, activity and how much fussing you will actually do. Scores recompute on every change.
-            Desire is allowed — the finish still has to earn the bag across the day you named.
+            Hours, climate, activity and fussing belong to this day. Skin, dehydration and reactivity come from the
+            instrument unless today's face is genuinely different. Day-brief pancake is a different 0–100 from the
+            profile risk in the header.
           </p>
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">{TERMS.dayBriefPancake}</p>
           <div className="mt-6 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onSeedFromProfile}
-              className="min-h-11 border border-champagne/60 px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
-            >
-              Seed from instrument profile
-            </button>
             {WEAR_PRESETS.map((p) => (
               <button
                 key={p.id}
@@ -103,20 +105,65 @@ export function WearStage({
                 {p.name}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={onResetDayBrief}
+              className="min-h-11 border border-border px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Reset hours to instrument
+            </button>
           </div>
         </div>
 
         <div className="mb-10 grid gap-8 lg:grid-cols-2">
           <div className="space-y-6">
             <div>
-              <p className="text-[0.62rem] tracking-[0.26em] uppercase text-champagne">Skin · texture · reactivity</p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {SKINS.map((s) => (
-                  <Chip key={s} active={wearDay.skinType === s} onClick={() => setWear({ skinType: s })}>
-                    <span className="capitalize">{s}</span>
-                  </Chip>
-                ))}
-              </div>
+              <p className="text-[0.62rem] tracking-[0.26em] uppercase text-champagne">Skin · from the instrument</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {profile.skin} · dehydration {LEVEL[wearDay.dehydration]} · reactivity {LEVEL[wearDay.reactivity]}. These
+                three are locked to the instrument so Wear does not ask them again.
+              </p>
+              <button
+                type="button"
+                aria-pressed={faceOverride}
+                onClick={() => onFaceOverride(!faceOverride)}
+                className={`mt-3 min-h-11 border px-4 py-2 text-[0.58rem] tracking-[0.24em] uppercase transition-colors ${
+                  faceOverride
+                    ? "border-champagne bg-champagne/10 text-champagne"
+                    : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {faceOverride ? "Using today's face" : "Today's face is different"}
+              </button>
+              {faceOverride && (
+                <>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {SKINS.map((s) => (
+                      <Chip key={s} active={wearDay.skinType === s} onClick={() => setWear({ skinType: s })}>
+                        <span className="capitalize">{s}</span>
+                      </Chip>
+                    ))}
+                  </div>
+                  <div className="mt-4 space-y-4">
+                    <Slider
+                      label="Dehydration today"
+                      hint={LEVEL[wearDay.dehydration]!}
+                      min={0}
+                      max={3}
+                      value={wearDay.dehydration}
+                      onChange={(n) => setWear({ dehydration: n })}
+                    />
+                    <Slider
+                      label="Reactivity today"
+                      hint={LEVEL[wearDay.reactivity]!}
+                      min={0}
+                      max={3}
+                      value={wearDay.reactivity}
+                      onChange={(n) => setWear({ reactivity: n })}
+                    />
+                  </div>
+                </>
+              )}
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {WEAR_TEXTURES.map((tex) => (
                   <Chip key={tex.id} active={wearDay.texture === tex.id} onClick={() => setWear({ texture: tex.id })}>
@@ -125,22 +172,6 @@ export function WearStage({
                 ))}
               </div>
               <div className="mt-4 space-y-4">
-                <Slider
-                  label="Dehydration"
-                  hint={LEVEL[wearDay.dehydration]!}
-                  min={0}
-                  max={3}
-                  value={wearDay.dehydration}
-                  onChange={(n) => setWear({ dehydration: n })}
-                />
-                <Slider
-                  label="Reactivity"
-                  hint={LEVEL[wearDay.reactivity]!}
-                  min={0}
-                  max={3}
-                  value={wearDay.reactivity}
-                  onChange={(n) => setWear({ reactivity: n })}
-                />
                 <Slider
                   label="Unevenness"
                   hint={LEVEL[wearDay.unevenness]!}
@@ -280,6 +311,9 @@ export function WearStage({
                     <Meter value={s.value} label=" " right="" tone={tone} />
                   </div>
                   <p className="mt-3 font-mono text-[0.55rem] leading-relaxed tracking-[0.02em] text-champagne/90">{s.formula}</p>
+                  {s.id === "pancake" && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{TERMS.dayBriefPancake}</p>}
+                  {s.id === "architecture" && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{TERMS.architecture}</p>}
+                  {s.id === "confidence" && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{TERMS.confidence}</p>}
                   <button
                     type="button"
                     onClick={() => setOpenWearScore(open ? null : s.id)}
@@ -343,8 +377,9 @@ export function WearStage({
             Veil · Edit · <span className="gilt-text italic">Editorial</span>
           </h3>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Each pathway re-scores pancake, architecture and longevity for this day brief. The recommended column is the
-            one the weights elected — not the one that flatters desire.
+            Each pathway re-scores day-brief pancake, architecture and longevity for this day brief — not the profile
+            pancake risk in the header. The recommended column is the one the weights elected — not the one that
+            flatters desire.
           </p>
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
             {wear.pathways.map((p) => (
@@ -358,7 +393,7 @@ export function WearStage({
                 <div className="mt-5 space-y-3">
                   <Meter
                     value={p.pancake}
-                    label="Pancake (low is good)"
+                    label="Day-brief pancake (low is good)"
                     right={`${p.pancake}`}
                     tone={p.pancake > 50 ? "oxblood" : "champagne"}
                   />

@@ -1,13 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Page } from "@/components/mi/chrome";
+import { PrintBar } from "@/components/mi/print-bar";
 import { CLAIM_KINDS, CLAIMS } from "@/lib/mi/claims";
 import { BASE_RISK, SCORE_VARIABLES, TYPE_SCORE_WEIGHTS } from "@/lib/mi/engine";
-import { shareHead } from "@/lib/mi/seo";
+import { PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
 import cake from "@/assets/cake-vs-skin.jpg";
 import capsule from "@/assets/capsule.jpg";
 
 export const Route = createFileRoute("/insights")({
-  head: () => shareHead("/insights"),
+  head: () => ({
+    meta: [
+      { title: "Why makeup cakes · Claim literacy · Makeup Intelligence" },
+      {
+        name: "description",
+        content:
+          "The mechanics of pancake makeup, transparent score weights, and claim literacy for SPF, treatment and hybrid makeup — named, dosed, tested, and when not to buy.",
+      },
+      { property: "og:title", content: "Why makeup cakes · Makeup Intelligence" },
+      { property: "og:description", content: "Architecture over cake, explained — with the maths visible." },
+    ],
+  }),
   component: Insights,
 });
 
@@ -69,6 +81,15 @@ function Insights() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-[1400px] px-5 pt-10 md:px-10">
+        <PrintBar
+          title="Print Insights"
+          note="The mechanics, published coefficients and claim cards — print-worthy, with every weight still named."
+        />
+        <p className="max-w-2xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">{PANCAKE_DEF}</p>
+        <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">{TERMS.pancakeRisk}</p>
+      </section>
+
       <section className="mx-auto max-w-[1400px] px-5 py-20 md:px-10">
         <div className="grid gap-x-16 gap-y-14 md:grid-cols-2">
           {MECHANISMS.map((m, i) => (
@@ -118,6 +139,8 @@ function Insights() {
 
           <p className="eyebrow mt-16">Type fit weights</p>
           <p className="display mt-3 text-3xl md:text-4xl">From a neutral 50</p>
+          <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">{TERMS.fit}</p>
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">{TERMS.filmCost}</p>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             {TYPE_SCORE_WEIGHTS.map((w) => (
               <div key={w.label} className="border border-border p-5">

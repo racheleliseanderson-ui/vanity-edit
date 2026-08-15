@@ -978,7 +978,7 @@ export function runWear(d: WearDay): WearReading {
   const scores: LiveScore[] = [
     {
       id: "pancake",
-      label: "Pancake risk",
+      label: "Day-brief pancake",
       value: pan.value,
       better: "low",
       formula: "12 + load×9 + set×7 + skin/climate/hours − skin-first",
