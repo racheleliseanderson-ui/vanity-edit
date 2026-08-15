@@ -446,7 +446,7 @@ export const PRESETS: Preset[] = [
 ];
 
 export const DEFAULT_PROFILE: Profile = {
-  goals: ["escape-pancake"],
+  goals: [],
   skin: "combination",
   sensitivity: 1,
   concerns: [],
@@ -458,7 +458,7 @@ export const DEFAULT_PROFILE: Profile = {
   ceiling: 6,
   coverage: 30,
   filters: [],
-  bag: ["full-foundation", "setting-powder", "powder-blush", "mascara"],
+  bag: [],
   budget: "mid",
   undertone: "neutral",
   depth: 5,

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { SettingsMenu } from "@/components/mi/settings";
 import { useI18n, type Key } from "@/lib/mi/i18n";
+import { EDITORIAL, PUBLICATION, SKINCARE_DESK, SPA_DESK } from "@/lib/mi/seo";
 
 const NAV = [
   { to: "/", key: "nav.salon" },
@@ -18,10 +19,10 @@ export function Header() {
     <header className="no-print sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto max-w-[1400px] px-5 py-3 md:flex md:items-center md:justify-between md:gap-6 md:px-10 md:py-4">
         <div className="flex items-center justify-between gap-4">
-          <Link to="/" className="group min-w-0 leading-none">
+          <a href={PUBLICATION} className="group min-w-0 leading-none">
             <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
             <span className="display mt-1 block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
-          </Link>
+          </a>
           <div className="shrink-0 md:hidden">
             <SettingsMenu />
           </div>
@@ -62,6 +63,23 @@ export function Footer() {
           <span>Vanity or Vice · Makeup Intelligence</span>
           <span>Education only · never a diagnosis, toxin score or safety ranking</span>
         </div>
+        <nav
+          aria-label="Publication"
+          className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs tracking-[0.18em] uppercase text-muted-foreground"
+        >
+          <a href={PUBLICATION} className="transition-colors hover:text-champagne">
+            Publication home
+          </a>
+          <a href={SPA_DESK} className="transition-colors hover:text-champagne">
+            Spa Intelligence
+          </a>
+          <a href={SKINCARE_DESK} className="transition-colors hover:text-champagne">
+            Skincare Desk
+          </a>
+          <a href={EDITORIAL} className="transition-colors hover:text-champagne">
+            Editorial standards
+          </a>
+        </nav>
       </div>
     </footer>
   );
