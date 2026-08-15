@@ -35,9 +35,9 @@ export const SHARE: Record<string, SharePage> = {
     path: "/products",
     title: "Product Search · Makeup Intelligence",
     description:
-      "Searching by brand is how cake happens. Find formulas by lane, layer weight, price and preference — tied to the type they belong to.",
+      "Searching by brand is how cake happens. Find formulas by lane, film cost, price and preference — tied to the type they belong to.",
     image: "/og/products.png",
-    imageAlt: "Product Search — formulas by lane and layer weight. Vanity or Vice.",
+    imageAlt: "Product Search — formulas by lane and film cost. Vanity or Vice.",
   },
   "/desk": {
     path: "/desk",

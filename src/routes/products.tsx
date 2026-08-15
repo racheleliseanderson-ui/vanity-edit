@@ -1,10 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Page } from "@/components/mi/chrome";
+import { CopyLinkButton } from "@/components/mi/copy-link";
+import { PrintBar } from "@/components/mi/print-bar";
 import { ConfirmButton } from "@/components/mi/touch";
 import { Chip, Meter } from "@/components/mi/viz";
-import { FILTERS, TYPE_MAP, TYPES } from "@/lib/mi/catalog";
+import { BRANDS, FILTERS, TYPE_MAP, TYPES } from "@/lib/mi/catalog";
 import { useI18n } from "@/lib/mi/i18n";
+import { pageUrl } from "@/lib/mi/share";
 import {
   PRICE_BANDS,
   PRICE_EXTENT,
@@ -23,7 +26,6 @@ import {
   type SortKey,
 } from "@/lib/mi/products";
 import type { FilterKey } from "@/lib/mi/types";
-import { shareHead } from "@/lib/mi/seo";
 
 interface ProductSearch {
   q?: string | undefined;
@@ -59,7 +61,20 @@ export const Route = createFileRoute("/products")({
     if (s["thin"] === true || s["thin"] === "true") out.thin = true;
     return out;
   },
-  head: () => shareHead("/products"),
+  head: () => ({
+    meta: [
+      { title: "Product Search · Makeup Intelligence" },
+      {
+        name: "description",
+        content:
+          "Search the desk by name, house, lane, type, price range and preference filters — every finished formula tied to the product type it belongs to.",
+      },
+      { property: "og:title", content: "Product Search · Makeup Intelligence" },
+      { property: "og:description", content: "Search finished formulas by lane, film cost, price and preference." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: ProductsRoute,
 });
 
@@ -82,6 +97,8 @@ function Highlight({ text, terms }: { text: string; terms: string[] }) {
     </>
   );
 }
+
+const BAG_KEY = "mi-products-bag";
 
 function ProductsRoute() {
   const search = Route.useSearch();
@@ -112,6 +129,24 @@ function ProductsRoute() {
 
   const [bagged, setBagged] = useState<string[]>([]);
   const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(BAG_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as unknown;
+        if (Array.isArray(parsed)) setBagged(parsed.filter((x): x is string => typeof x === "string"));
+      }
+    } catch {
+      /* session unavailable */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(BAG_KEY, JSON.stringify(bagged));
+    } catch {
+      /* session unavailable */
+    }
+  }, [bagged]);
   useEffect(() => setRecent(loadRecentSearches()), []);
   useEffect(() => {
     if (!q.trim()) return;
@@ -198,8 +233,12 @@ function ProductsRoute() {
             <br className="sm:hidden" /> <span className="gilt-text italic">what it does</span>, not by hype
           </h1>
           <p className="mt-5 max-w-2xl leading-[1.85] text-muted-foreground">
-            {PRODUCTS.length} finished formulas across {PRODUCT_BRANDS.length} houses, each tied to the product type it
-            belongs to and the layer weight it costs you. Education only — never a safety ranking.
+            {PRODUCTS.length} finished formulas across {PRODUCT_BRANDS.length} formula houses
+            {PRODUCT_BRANDS.length !== BRANDS.length
+              ? ` — the desk holds ${BRANDS.length} houses; not every house has a named SKU yet`
+              : ""}.{" "}
+            {typesWithProducts.length} of {TYPES.length} product types have a finished formula. Each card names the film
+            cost that object adds. Education only — never a safety ranking.
           </p>
 
           <div className="mt-10 panel p-5 md:p-8">
@@ -328,7 +367,7 @@ function ProductsRoute() {
                 </select>
                 {typeId && (
                   <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-                    {TYPE_MAP[typeId]?.job} · layer weight {TYPE_MAP[typeId]?.layerWeight} of 3
+                    {TYPE_MAP[typeId]?.job} · film cost {TYPE_MAP[typeId]?.layerWeight} of 3
                   </p>
                 )}
               </div>
@@ -437,6 +476,15 @@ function ProductsRoute() {
         </div>
       </section>
 
+      <div className="mx-auto max-w-[1400px] px-5 pt-10 md:px-10">
+        <PrintBar
+          title="Print this shortlist"
+          note={`${results.length} of ${PRODUCTS.length} formulas on the current filters. Print or save as PDF — when-not-to-buy lines stay attached.`}
+        >
+          <CopyLinkButton href={pageUrl("/products", search)} label="Copy link" className="px-6 py-0" />
+        </PrintBar>
+      </div>
+
       <div className="mx-auto max-w-[1400px] px-5 py-14 md:px-10">
         {results.length === 0 ? (
           <div className="space-y-8">
@@ -449,13 +497,20 @@ function ProductsRoute() {
                   returns {loosen.count} formulas.
                 </p>
               )}
+              <button
+                type="button"
+                onClick={clear}
+                className="mt-6 min-h-11 border border-champagne/60 px-6 text-[0.62rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+              >
+                Clear filters
+              </button>
             </div>
             {closest.length > 0 && (
               <div>
                 <p className="eyebrow">Closest on the desk</p>
                 <ul className="mt-6 grid list-none gap-6 p-0 md:grid-cols-2 xl:grid-cols-3">
                   {closest.map(({ product: p }) => (
-                    <ResultCard key={p.id} p={p} terms={terms} matchedOn={[]} relevance={0} onPin={() => patch({ type: p.typeId })} bagged={bagged} setBagged={setBagged} />
+                    <ResultCard key={p.id} p={p} terms={terms} matchedOn={[]} relevance={0} bagged={bagged} setBagged={setBagged} />
                   ))}
                 </ul>
               </div>
@@ -470,7 +525,6 @@ function ProductsRoute() {
                 terms={terms}
                 relevance={relevance}
                 matchedOn={matchedOn}
-                onPin={() => patch({ type: p.typeId })}
                 bagged={bagged}
                 setBagged={setBagged}
               />
@@ -482,6 +536,22 @@ function ProductsRoute() {
           yourself. Nothing here is a safety ranking, toxin score or medical advice.
         </p>
       </div>
+      {bagged.length > 0 && (
+        <div className="no-print sticky bottom-0 z-30 border-t border-champagne/40 bg-background/95 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-5 py-3 md:px-10">
+            <p className="text-[0.68rem] tracking-[0.18em] uppercase text-champagne">
+              {bagged.length} in your bag edit
+            </p>
+            <Link
+              to="/edit"
+              search={{ bag: [...new Set(bagged)].join(","), stage: "Bag" }}
+              className="inline-flex min-h-11 items-center border border-champagne/60 px-5 text-[0.62rem] tracking-[0.24em] uppercase text-champagne transition-colors hover:bg-champagne/10"
+            >
+              Open The Edit →
+            </Link>
+          </div>
+        </div>
+      )}
     </Page>
   );
 }
@@ -508,7 +578,6 @@ function ResultCard({
   terms,
   relevance,
   matchedOn,
-  onPin,
   bagged,
   setBagged,
 }: {
@@ -516,7 +585,6 @@ function ResultCard({
   terms: string[];
   relevance: number;
   matchedOn: string[];
-  onPin: () => void;
   bagged: string[];
   setBagged: (next: string[]) => void;
 }) {
@@ -527,7 +595,13 @@ function ResultCard({
     <li className="panel flex flex-col gap-4 p-6">
       <div>
         <p className="eyebrow">
-          <Highlight text={p.brand} terms={terms} />
+          <Link
+            to="/desk"
+            search={{ house: p.brand }}
+            className="transition-colors hover:text-champagne"
+          >
+            <Highlight text={p.brand} terms={terms} />
+          </Link>
         </p>
         <h2 className="display mt-2 text-2xl leading-tight">
           <Highlight text={p.name} terms={terms} />
@@ -548,13 +622,14 @@ function ResultCard({
         </p>
       )}
       <div className="mt-auto space-y-3 border-t border-border pt-4">
-        <button
-          onClick={onPin}
+        <Link
+          to="/products"
+          search={{ type: p.typeId }}
           className="tap block text-left text-[0.62rem] tracking-[0.24em] uppercase text-muted-foreground transition-colors hover:text-champagne"
         >
           {ty?.label ?? p.typeId} · {ty?.lane}
           {p.shades ? ` · ${p.shades} shades` : ""}
-        </button>
+        </Link>
         <p className="text-xs leading-snug text-muted-foreground">{ty?.job}</p>
         <Meter
           value={((ty?.layerWeight ?? 0) / 3) * 100}
@@ -575,8 +650,7 @@ function ResultCard({
         )}
         <ConfirmButton
           onPress={() => {
-            setBagged([...bagged, p.typeId]);
-            window.location.href = `/edit?bag=${encodeURIComponent(p.typeId)}&stage=Bag`;
+            if (!bagged.includes(p.typeId)) setBagged([...bagged, p.typeId]);
           }}
           confirmed={t("edit.inBag")}
           className="w-full"

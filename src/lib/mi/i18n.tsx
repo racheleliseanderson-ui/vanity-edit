@@ -20,6 +20,7 @@ export const isRtl = (l: Locale) => LOCALES.find((x) => x.id === l)?.rtl === tru
 /** UI chrome only. Editorial essays, brand notes and engine reasoning stay in English. */
 const EN = {
   "nav.salon": "Salon",
+  "nav.home": "Home",
   "nav.edit": "The Edit",
   "nav.products": "Products",
   "nav.desk": "Desk",
@@ -128,6 +129,7 @@ export type Key = keyof typeof EN;
 
 const FR: Partial<Record<Key, string>> = {
   "nav.salon": "Salon",
+  "nav.home": "Accueil",
   "nav.edit": "L'Édit",
   "nav.products": "Produits",
   "nav.desk": "Le Bureau",
@@ -208,6 +210,7 @@ const FR: Partial<Record<Key, string>> = {
 
 const ES: Partial<Record<Key, string>> = {
   "nav.salon": "Salón",
+  "nav.home": "Inicio",
   "nav.edit": "La Edición",
   "nav.products": "Productos",
   "nav.desk": "El Escritorio",
@@ -287,7 +290,7 @@ const ES: Partial<Record<Key, string>> = {
 };
 
 const DE: Partial<Record<Key, string>> = {
-  "nav.salon": "Salon", "nav.edit": "Die Edit", "nav.products": "Produkte", "nav.desk": "Der Tisch",
+  "nav.salon": "Salon", "nav.home": "Start", "nav.edit": "Die Edit", "nav.products": "Produkte", "nav.desk": "Der Tisch",
   "nav.insights": "Einsichten", "nav.primary": "Haupt", "nav.skip": "Zum Inhalt",
   "settings.title": "Einstellungen", "settings.theme": "Thema", "settings.access": "Barrierefreiheit",
   "settings.language": "Sprache", "settings.cb": "Farbenblind-sicher", "settings.motion": "Bewegung reduzieren",
@@ -308,7 +311,7 @@ const DE: Partial<Record<Key, string>> = {
 };
 
 const IT: Partial<Record<Key, string>> = {
-  "nav.salon": "Salone", "nav.edit": "L'Edit", "nav.products": "Prodotti", "nav.desk": "Il Banco",
+  "nav.salon": "Salone", "nav.home": "Home", "nav.edit": "L'Edit", "nav.products": "Prodotti", "nav.desk": "Il Banco",
   "nav.insights": "Sguardi", "nav.primary": "Principale", "nav.skip": "Vai al contenuto",
   "settings.title": "Impostazioni", "settings.theme": "Tema", "settings.access": "Accessibilità",
   "settings.language": "Lingua", "settings.cb": "Sicuro per daltonici", "settings.motion": "Riduci il movimento",
@@ -329,7 +332,7 @@ const IT: Partial<Record<Key, string>> = {
 };
 
 const PT: Partial<Record<Key, string>> = {
-  "nav.salon": "Salão", "nav.edit": "A Edição", "nav.products": "Produtos", "nav.desk": "A Bancada",
+  "nav.salon": "Salão", "nav.home": "Início", "nav.edit": "A Edição", "nav.products": "Produtos", "nav.desk": "A Bancada",
   "nav.insights": "Olhares", "nav.primary": "Principal", "nav.skip": "Ir para o conteúdo",
   "settings.title": "Ajustes", "settings.theme": "Tema", "settings.access": "Acessibilidade",
   "settings.language": "Idioma", "settings.cb": "Seguro para daltonismo", "settings.motion": "Reduzir movimento",
@@ -350,7 +353,7 @@ const PT: Partial<Record<Key, string>> = {
 };
 
 const JA: Partial<Record<Key, string>> = {
-  "nav.salon": "サロン", "nav.edit": "エディット", "nav.products": "製品", "nav.desk": "デスク",
+  "nav.salon": "サロン", "nav.home": "ホーム", "nav.edit": "エディット", "nav.products": "製品", "nav.desk": "デスク",
   "nav.insights": "考察", "nav.primary": "メイン", "nav.skip": "本文へ",
   "settings.title": "設定", "settings.theme": "テーマ", "settings.access": "アクセシビリティ",
   "settings.language": "言語", "settings.cb": "色覚に配慮", "settings.motion": "動きを減らす",
@@ -370,7 +373,7 @@ const JA: Partial<Record<Key, string>> = {
 };
 
 const KO: Partial<Record<Key, string>> = {
-  "nav.salon": "살롱", "nav.edit": "에디트", "nav.products": "제품", "nav.desk": "데스크",
+  "nav.salon": "살롱", "nav.home": "홈", "nav.edit": "에디트", "nav.products": "제품", "nav.desk": "데스크",
   "nav.insights": "인사이트", "nav.primary": "주요", "nav.skip": "본문으로",
   "settings.title": "설정", "settings.theme": "테마", "settings.access": "접근성",
   "settings.language": "언어", "settings.cb": "색약 안전", "settings.motion": "동작 줄이기",
@@ -390,7 +393,7 @@ const KO: Partial<Record<Key, string>> = {
 };
 
 const ZH: Partial<Record<Key, string>> = {
-  "nav.salon": "沙龙", "nav.edit": "编辑台", "nav.products": "产品", "nav.desk": "工作台",
+  "nav.salon": "沙龙", "nav.home": "首页", "nav.edit": "编辑台", "nav.products": "产品", "nav.desk": "工作台",
   "nav.insights": "洞察", "nav.primary": "主要", "nav.skip": "跳到正文",
   "settings.title": "设置", "settings.theme": "主题", "settings.access": "无障碍",
   "settings.language": "语言", "settings.cb": "色盲友好", "settings.motion": "减少动效",
@@ -410,7 +413,7 @@ const ZH: Partial<Record<Key, string>> = {
 };
 
 const AR: Partial<Record<Key, string>> = {
-  "nav.salon": "الصالون", "nav.edit": "التحرير", "nav.products": "المنتجات", "nav.desk": "المكتب",
+  "nav.salon": "الصالون", "nav.home": "الرئيسية", "nav.edit": "التحرير", "nav.products": "المنتجات", "nav.desk": "المكتب",
   "nav.insights": "قراءات", "nav.primary": "الرئيسية", "nav.skip": "الانتقال إلى المحتوى",
   "settings.title": "الإعدادات", "settings.theme": "المظهر", "settings.access": "إمكانية الوصول",
   "settings.language": "اللغة", "settings.cb": "آمن لعمى الألوان", "settings.motion": "تقليل الحركة",

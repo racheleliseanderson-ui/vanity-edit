@@ -164,7 +164,7 @@ export const TYPE_SCORE_WEIGHTS: { label: string; weight: string; note: string }
   { label: "Coverage match", weight: "−|type.coverage − profile.coverage| × 0.42", note: "Closest delivery to your appetite wins." },
   { label: "Sebum behaviour", weight: "type.oil × 6 (oily) or × 3.5 (combination)", note: "How the texture holds on sebum." },
   { label: "Dehydration behaviour", weight: "type.dry × 6 (altitude) or × 4.5 (dry)", note: "Film flexibility against water loss." },
-  { label: "Layer weight", weight: "−layerWeight × 7 if anti-pancake else × 4", note: "Opacity load is always costly; costlier when escaping cake." },
+  { label: "Film cost", weight: "−layerWeight × 7 if anti-pancake else × 4", note: "A film is one continuous layer on the skin. Opacity load is always costly; costlier when escaping cake." },
   { label: "Upkeep demanded", weight: "−upkeep × 5 if maintenance = 0", note: "No touch-ups means high-upkeep objects lose." },
   { label: "Time cost", weight: "−max(0, minutes − 2) × 5 if timeBudget ≤ 5", note: "Slow steps drop out of short routines." },
   { label: "Wear-less / multi-use / goals", weight: "+8 to +22 on pathway-aligned types; −6 to −8 on conflicts", note: "Goals reweight lanes, they do not invent miracles." },
@@ -393,9 +393,9 @@ function scoreType(p: Profile, t: ProductType): TypeScore {
     if (t.dry <= -2) cautions.push("Powder-heavy texture is the first thing to crack when skin is dry.");
   }
 
-  bump("Layer weight", -t.layerWeight * (has(p, "escape-pancake") ? 7 : 4), has(p, "escape-pancake") ? "Weighted harder because escaping pancake is a stated goal." : "Every unit of opacity load costs points.", has(p, "escape-pancake") ? "−layerWeight × 7" : "−layerWeight × 4");
+  bump("Film cost", -t.layerWeight * (has(p, "escape-pancake") ? 7 : 4), has(p, "escape-pancake") ? "Weighted harder because escaping pancake is a stated goal." : "Every unit of opacity load costs points.", has(p, "escape-pancake") ? "−layerWeight × 7" : "−layerWeight × 4");
   if (t.layerWeight === 0 && t.lane !== "care") reasons.push("Adds zero opacity to the stack.");
-  if (t.layerWeight >= 3) cautions.push("Heaviest layer weight on the desk.");
+  if (t.layerWeight >= 3) cautions.push("Heaviest film cost on the desk.");
 
   if (p.maintenance === 0) {
     bump("Upkeep demanded", -t.upkeep * 5, "You have ruled out midday intervention.", "−upkeep × 5");
@@ -595,7 +595,7 @@ export function scoreTypes(p: Profile): TypeScore[] {
 
 /* ─────────────── Alternative pathways ─────────────── */
 
-const PATHWAY_DEFS: { id: string; name: string; promise: string; types: string[]; tradeoff: string }[] = [
+export const PATHWAY_DEFS: { id: string; name: string; promise: string; types: string[]; tradeoff: string }[] = [
   { id: "sheer-hybrid", name: "Sheer hybrid base", promise: "One serum tint or tinted SPF, sheered, plus placed concealer.", types: ["skin-tint", "tinted-spf", "strategic-concealer", "cream-blush"], tradeoff: "You will see some of your own skin. That is the design, not a failure." },
   { id: "spot-only", name: "Spot-only architecture", promise: "No base. Concealer and corrector where the eye actually lands.", types: ["no-base", "strategic-concealer", "colour-corrector", "brow-gel"], tradeoff: "Tone is uneven in raking light — but nothing can cake." },
   { id: "one-stick", name: "One-stick capsule", promise: "A multipurpose stick for base and contour, a balm for cheeks and lips.", types: ["multi-stick", "lip-cheek-balm", "brow-gel", "mascara"], tradeoff: "Shade precision is coarser than a liquid match." },

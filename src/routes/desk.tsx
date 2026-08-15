@@ -1,31 +1,152 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { Page } from "@/components/mi/chrome";
+import { CopyLinkButton } from "@/components/mi/copy-link";
+import { ScrollRail } from "@/components/mi/scroll-rail";
+import { Sheet } from "@/components/mi/touch";
 import { BRANDS, FAMILIES, PRICE_TIERS, type PriceTier } from "@/lib/mi/catalog";
-import { shareHead } from "@/lib/mi/seo";
+import { pageUrl } from "@/lib/mi/share";
 import still from "@/assets/desk-still.jpg";
 
+interface DeskSearch {
+  house?: string | undefined;
+  family?: string | undefined;
+  tier?: string | undefined;
+  q?: string | undefined;
+}
+
 export const Route = createFileRoute("/desk")({
-  head: () => shareHead("/desk"),
+  validateSearch: (s: Record<string, unknown>): DeskSearch => {
+    const out: DeskSearch = {};
+    for (const k of ["house", "family", "tier", "q"] as const) {
+      const v = s[k];
+      if (typeof v === "string" && v) out[k] = v;
+    }
+    return out;
+  },
+  head: () => ({
+    meta: [
+      { title: "The desk · Makeup Intelligence" },
+      {
+        name: "description",
+        content:
+          "Desk houses across drugstore, mid, prestige and luxury — mineral, hybrid SPF, skin tint, botanical, multi-use and sensitive-aware lanes. Positioning notes, what earns or loses the bag. Never rankings or toxin scores.",
+      },
+      { property: "og:title", content: "The desk · Makeup Intelligence" },
+      { property: "og:description", content: "Why each house sits on the Good-for-You desk — and at which price tier." },
+    ],
+  }),
   component: Desk,
 });
 
 function Desk() {
-  const [family, setFamily] = useState<string>("all");
-  const [tier, setTier] = useState<string>("all");
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const family = search.family && FAMILIES.includes(search.family as (typeof FAMILIES)[number]) ? search.family : "all";
+  const tier = search.tier && PRICE_TIERS.some((t) => t.id === search.tier) ? search.tier : "all";
+  const house = search.house ?? "";
+  const q = search.q ?? "";
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const patch = (next: DeskSearch) =>
+    navigate({
+      search: (prev: DeskSearch) => {
+        const merged: DeskSearch = { ...prev, ...next };
+        for (const k of Object.keys(merged) as (keyof DeskSearch)[]) {
+          if (merged[k] === "" || merged[k] === undefined || merged[k] === "all") delete merged[k];
+        }
+        return merged;
+      },
+      replace: true,
+    });
+
   const shown = useMemo(() => {
+    const query = (q || house).trim().toLowerCase();
     return BRANDS.filter((b) => {
       if (family !== "all" && b.family !== family && b.also !== family) return false;
       if (tier !== "all" && b.tier !== tier) return false;
+      if (query && !b.name.toLowerCase().includes(query) && !b.lane.toLowerCase().includes(query)) return false;
       return true;
     });
-  }, [family, tier]);
+  }, [family, tier, q, house]);
 
   const tierCounts = useMemo(() => {
     const c: Record<string, number> = {};
     for (const t of PRICE_TIERS) c[t.id] = BRANDS.filter((b) => b.tier === t.id).length;
     return c;
   }, []);
+
+  useEffect(() => {
+    if (!house) return;
+    const id = `house-${house.replace(/\s+/g, "-").toLowerCase()}`;
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [house]);
+
+  const activeLabel = [
+    family !== "all" ? family : null,
+    tier !== "all" ? PRICE_TIERS.find((t) => t.id === tier)?.label : null,
+    house || q || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const filters = (
+    <>
+      <label className="block">
+        <span className="sr-only">Search houses</span>
+        <input
+          value={q || house}
+          onChange={(e) => patch({ q: e.target.value || undefined, house: undefined })}
+          type="search"
+          placeholder="Search a house"
+          className="min-h-11 w-full border border-border bg-transparent px-3 text-sm placeholder:text-muted-foreground"
+        />
+      </label>
+      <div className="mt-3">
+        <ScrollRail label="Families">
+          <div className="flex gap-2">
+            {["all", ...FAMILIES].map((f) => (
+              <button
+                key={f}
+                onClick={() => patch({ family: f === "all" ? undefined : f })}
+                className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
+                  family === f ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f === "all" ? `All houses (${BRANDS.length})` : f}
+              </button>
+            ))}
+          </div>
+        </ScrollRail>
+      </div>
+      <div className="mt-3">
+        <ScrollRail label="Price tiers">
+          <div className="flex gap-2">
+            <button
+              onClick={() => patch({ tier: undefined })}
+              className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
+                tier === "all" ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              All tiers
+            </button>
+            {PRICE_TIERS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => patch({ tier: t.id })}
+                className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
+                  tier === t.id ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label} ({tierCounts[t.id] ?? 0})
+              </button>
+            ))}
+          </div>
+        </ScrollRail>
+      </div>
+    </>
+  );
 
   return (
     <Page>
@@ -40,49 +161,44 @@ function Desk() {
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
             Drugstore through luxury — same architecture questions. Tier is access and positioning, never a quality ranking.
-            Each house says what earns the bag and what loses it.
+            Each house says what earns the bag and what loses it. {BRANDS.length} houses on the desk.
           </p>
         </div>
       </section>
 
       <div className="sticky top-[86px] z-30 border-b border-border bg-background/85 backdrop-blur-xl">
-        <div className="mx-auto max-w-[1400px] space-y-3 px-5 py-4 md:px-10">
-          <div className="flex gap-2 overflow-x-auto">
-            {["all", ...FAMILIES].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFamily(f)}
-                className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
-                  family === f ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f === "all" ? `All houses (${BRANDS.length})` : f}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 overflow-x-auto">
-            <button
-              onClick={() => setTier("all")}
-              className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
-                tier === "all" ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All tiers
-            </button>
-            {PRICE_TIERS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTier(t.id)}
-                className={`whitespace-nowrap border px-4 py-2 text-[0.68rem] tracking-[0.22em] uppercase transition-colors ${
-                  tier === t.id ? "border-champagne bg-champagne/10 text-champagne" : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.label} ({tierCounts[t.id] ?? 0})
-              </button>
-            ))}
-          </div>
+        <div className="mx-auto hidden max-w-[1400px] space-y-3 px-5 py-4 md:block md:px-10">
+          {filters}
+          <CopyLinkButton href={pageUrl("/desk", search)} label="Copy link" className="px-5 py-2" />
+        </div>
+        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-5 py-3 md:hidden">
+          <p className="min-w-0 flex-1 truncate text-[0.62rem] tracking-[0.18em] uppercase text-muted-foreground">
+            {activeLabel || `All ${BRANDS.length} houses`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            className="min-h-11 shrink-0 border border-champagne/50 px-4 text-[0.62rem] tracking-[0.22em] uppercase text-champagne"
+          >
+            Filters
+          </button>
         </div>
       </div>
+
+      <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Filter the desk">
+        {filters}
+        <CopyLinkButton href={pageUrl("/desk", search)} label="Copy link" className="mt-4 w-full justify-center" />
+        <button
+          type="button"
+          onClick={() => {
+            patch({ family: undefined, tier: undefined, house: undefined, q: undefined });
+            setSheetOpen(false);
+          }}
+          className="mt-3 min-h-11 w-full border border-border text-[0.62rem] tracking-[0.24em] uppercase text-muted-foreground"
+        >
+          Clear filters
+        </button>
+      </Sheet>
 
       <section className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -101,7 +217,7 @@ function Desk() {
       <section className="mx-auto max-w-[1400px] px-5 pb-16 md:px-10">
         <div className="divide-y divide-border border-y border-border">
           {shown.map((b) => (
-            <article key={b.name} className="grid gap-8 py-10 md:grid-cols-[1fr_1.4fr]">
+            <article key={b.name} id={`house-${b.name.replace(/\s+/g, "-").toLowerCase()}`} className="grid gap-8 py-10 md:grid-cols-[1fr_1.4fr]">
               <div>
                 <p className="text-[0.65rem] tracking-[0.26em] uppercase text-champagne">
                   {b.family}
@@ -154,7 +270,16 @@ function Desk() {
         </div>
 
         {shown.length === 0 && (
-          <p className="py-16 text-center text-muted-foreground">No houses in this family × tier cut. Open a filter.</p>
+          <div className="py-16 text-center">
+            <p className="text-muted-foreground">No houses in this cut. Open a filter.</p>
+            <button
+              type="button"
+              onClick={() => patch({ family: undefined, tier: undefined, house: undefined, q: undefined })}
+              className="mt-5 min-h-11 border border-champagne/60 px-6 text-[0.62rem] tracking-[0.24em] uppercase text-champagne"
+            >
+              Clear filters
+            </button>
+          </div>
         )}
 
         <div className="mt-16 panel p-10">

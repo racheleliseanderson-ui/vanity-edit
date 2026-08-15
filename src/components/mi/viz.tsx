@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { Architecture, Contribution } from "@/lib/mi/types";
+import { TERMS } from "@/lib/mi/vocab";
 
 export function riskTone(risk: number) {
   return risk < 25 ? "var(--tone-good)" : risk < 45 ? "var(--tone-fair)" : risk < 65 ? "var(--tone-warn)" : "var(--tone-bad)";
@@ -27,7 +28,7 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
       </svg>
       <span className="sr-only">Pancake risk {arch.risk} out of 100 · finish skin-like {arch.skinlike}</span>
       <div>
-        <p className="eyebrow">Pancake risk</p>
+        <p className="eyebrow">Profile pancake risk</p>
         <p className="display text-5xl leading-none" style={{ color: tone }}>
           <DeltaNumber value={arch.risk} />
         </p>
@@ -40,6 +41,8 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
           base {arch.baseRisk ?? 30} + variables
         </p>
         {!compact && <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{arch.verdict}</p>}
+        <p className="mt-3 max-w-md text-xs leading-relaxed text-muted-foreground">{TERMS.pancakeRisk}</p>
+        <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">{TERMS.architecture}</p>
       </div>
     </div>
   );
@@ -250,6 +253,7 @@ export function Tension({ value, note }: { value: number; note: string }) {
         })}
       </div>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{TERMS.kitTension}</p>
     </div>
   );
 }
