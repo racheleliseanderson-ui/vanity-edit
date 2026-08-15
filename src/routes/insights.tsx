@@ -2,22 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Page } from "@/components/mi/chrome";
 import { CLAIM_KINDS, CLAIMS } from "@/lib/mi/claims";
 import { BASE_RISK, SCORE_VARIABLES, TYPE_SCORE_WEIGHTS } from "@/lib/mi/engine";
+import { shareHead } from "@/lib/mi/seo";
 import cake from "@/assets/cake-vs-skin.jpg";
 import capsule from "@/assets/capsule.jpg";
 
 export const Route = createFileRoute("/insights")({
-  head: () => ({
-    meta: [
-      { title: "Why makeup cakes · Claim literacy · Makeup Intelligence" },
-      {
-        name: "description",
-        content:
-          "The mechanics of pancake makeup, transparent score weights, and claim literacy for SPF, treatment and hybrid makeup — named, dosed, tested, and when not to buy.",
-      },
-      { property: "og:title", content: "Why makeup cakes · Makeup Intelligence" },
-      { property: "og:description", content: "Architecture over cake, explained — with the maths visible." },
-    ],
-  }),
+  head: () => shareHead("/insights"),
   component: Insights,
 });
 

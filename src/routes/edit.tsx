@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Page } from "@/components/mi/chrome";
+import { InfoTip } from "@/components/mi/info-tip";
 import { RunConsole, type PipelineState } from "@/components/mi/run-console";
 import { Carousel, ConfirmButton, Sheet, useSwipe } from "@/components/mi/touch";
 import { Chip, DeltaNumber, Ledger, Meter, RiskDial, Slider, Spectrum, Tension } from "@/components/mi/viz";
@@ -44,6 +45,7 @@ import {
 import type { Budget, Climate, FilterKey, Profile, SkinType } from "@/lib/mi/types";
 import { WearStage } from "@/components/mi/wear-stage";
 import { WEAR_PRESETS, defaultWearDay, runWear, type WearDay } from "@/lib/mi/wear";
+import { shareHead } from "@/lib/mi/seo";
 
 export const Route = createFileRoute("/edit")({
   validateSearch: (
@@ -56,18 +58,7 @@ export const Route = createFileRoute("/edit")({
     }
     return out;
   },
-  head: () => ({
-    meta: [
-      { title: "The Edit · Makeup Intelligence" },
-      {
-        name: "description",
-        content:
-          "Adjust skin, goals, lifestyle, maintenance tolerance and desire — and watch pancake risk, pathways, wear forecast, tools, bag calls and your kit rescore live.",
-      },
-      { property: "og:title", content: "The Edit · Makeup Intelligence" },
-      { property: "og:description", content: "Live pancake-risk and architecture scoring." },
-    ],
-  }),
+  head: () => shareHead("/edit"),
   component: EditRoute,
 });
 
@@ -603,8 +594,16 @@ function EditRoute() {
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {SCORE_VARIABLES.slice(0, 8).map((v) => (
-                    <span key={v.id} className="border border-border px-3 py-1.5 text-[0.58rem] tracking-[0.16em] uppercase text-muted-foreground" title={v.weight}>
-                      {v.label}
+                    <span
+                      key={v.id}
+                      className="inline-flex items-center gap-1 border border-border px-3 py-1.5 text-[0.58rem] tracking-[0.16em] uppercase text-muted-foreground"
+                    >
+                      <InfoTip label={v.label}>
+                        <span className="font-mono tracking-normal normal-case text-champagne">{v.weight}</span>
+                        {v.raisesRiskWhen ? (
+                          <span className="mt-1 block tracking-normal normal-case">{v.raisesRiskWhen}</span>
+                        ) : null}
+                      </InfoTip>
                     </span>
                   ))}
                 </div>

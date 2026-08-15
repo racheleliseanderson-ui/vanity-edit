@@ -2,25 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Page } from "@/components/mi/chrome";
 import { BRANDS, PRESETS, TYPES } from "@/lib/mi/catalog";
 import { CLAIMS } from "@/lib/mi/claims";
+import { shareHead } from "@/lib/mi/seo";
 import hero from "@/assets/hero-skin.jpg";
 import still from "@/assets/desk-still.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Makeup Intelligence · The intelligent answer to pancake makeup" },
-      {
-        name: "description",
-        content:
-          "A personal edit instrument from Vanity or Vice: live pancake-risk scoring with transparent weights, alternative pathways, wear & longevity forecast, claim literacy for SPF and hybrid makeup, and bag decisions matched to your skin, goals and lifestyle.",
-      },
-      { property: "og:title", content: "Makeup Intelligence · Vanity or Vice" },
-      {
-        property: "og:description",
-        content: "Architecture over cake. Desire is allowed — the finish still has to earn the bag.",
-      },
-    ],
-  }),
+  head: () => shareHead("/"),
   component: Index,
 });
 

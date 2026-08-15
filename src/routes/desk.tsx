@@ -2,21 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Page } from "@/components/mi/chrome";
 import { BRANDS, FAMILIES, PRICE_TIERS, type PriceTier } from "@/lib/mi/catalog";
+import { shareHead } from "@/lib/mi/seo";
 import still from "@/assets/desk-still.jpg";
 
 export const Route = createFileRoute("/desk")({
-  head: () => ({
-    meta: [
-      { title: "The desk · Makeup Intelligence" },
-      {
-        name: "description",
-        content:
-          "Desk houses across drugstore, mid, prestige and luxury — mineral, hybrid SPF, skin tint, botanical, multi-use and sensitive-aware lanes. Positioning notes, what earns or loses the bag. Never rankings or toxin scores.",
-      },
-      { property: "og:title", content: "The desk · Makeup Intelligence" },
-      { property: "og:description", content: "Why each house sits on the Good-for-You desk — and at which price tier." },
-    ],
-  }),
+  head: () => shareHead("/desk"),
   component: Desk,
 });
 
