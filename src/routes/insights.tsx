@@ -3,23 +3,13 @@ import { Page } from "@/components/mi/chrome";
 import { PrintBar } from "@/components/mi/print-bar";
 import { CLAIM_KINDS, CLAIMS } from "@/lib/mi/claims";
 import { BASE_RISK, SCORE_VARIABLES, TYPE_SCORE_WEIGHTS } from "@/lib/mi/engine";
+import { shareHead } from "@/lib/mi/seo";
 import { PANCAKE_DEF, TERMS } from "@/lib/mi/vocab";
 import cake from "@/assets/cake-vs-skin.jpg";
 import capsule from "@/assets/capsule.jpg";
 
 export const Route = createFileRoute("/insights")({
-  head: () => ({
-    meta: [
-      { title: "Why makeup cakes · Claim literacy · Makeup Intelligence" },
-      {
-        name: "description",
-        content:
-          "The mechanics of pancake makeup, transparent score weights, and claim literacy for SPF, treatment and hybrid makeup — named, dosed, tested, and when not to buy.",
-      },
-      { property: "og:title", content: "Why makeup cakes · Makeup Intelligence" },
-      { property: "og:description", content: "Architecture over cake, explained — with the maths visible." },
-    ],
-  }),
+  head: () => shareHead("/insights"),
   component: Insights,
 });
 
@@ -86,7 +76,10 @@ function Insights() {
           title="Print Insights"
           note="The mechanics, published coefficients and claim cards — print-worthy, with every weight still named."
         />
-        <p className="max-w-2xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">{PANCAKE_DEF}</p>
+        <p className="max-w-2xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">
+          <span className="block text-[0.62rem] tracking-[0.2em] uppercase text-champagne">Pancake makeup</span>
+          <span className="mt-2 block">{PANCAKE_DEF}</span>
+        </p>
         <p className="mt-3 max-w-2xl text-xs leading-relaxed text-muted-foreground">{TERMS.pancakeRisk}</p>
       </section>
 

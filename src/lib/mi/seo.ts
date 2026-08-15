@@ -1,4 +1,4 @@
-/** Canonical share metadata for makeup.vanityvice.blog. No network at runtime. */
+/** One canonical, one og:url, one title per page. Root must not also emit these. */
 
 export const SITE_ORIGIN = "https://makeup.vanityvice.blog";
 export const PUBLICATION = "https://vanityvice.blog/";
@@ -17,9 +17,9 @@ export type SharePage = {
 export const SHARE: Record<string, SharePage> = {
   "/": {
     path: "/",
-    title: "Makeup Intelligence · Vanity or Vice",
+    title: "Makeup Intelligence · The intelligent answer to pancake makeup",
     description:
-      "Pancake makeup starts with the wrong question. Score product types against skin, goals and lifestyle — then decide what earns the bag.",
+      "Pancake makeup is a thick, mask-like finish that cracks and settles. Score product types against skin, goals and lifestyle — then leave with a printable packet.",
     image: "/og/home.png",
     imageAlt: "Makeup Intelligence — architecture over cake. Vanity or Vice.",
   },
@@ -27,7 +27,7 @@ export const SHARE: Record<string, SharePage> = {
     path: "/edit",
     title: "The Edit · Makeup Intelligence",
     description:
-      "The bag is already making decisions. Adjust skin, goals and tolerance and watch pancake risk rescore — before buying another base.",
+      "Score a sixteen-field profile and leave with a printable decision packet. Pancake risk, a costed kit, and named products at real prices.",
     image: "/og/edit.png",
     imageAlt: "The Edit — live pancake-risk scoring. Vanity or Vice.",
   },
@@ -51,16 +51,20 @@ export const SHARE: Record<string, SharePage> = {
     path: "/insights",
     title: "Why makeup cakes · Makeup Intelligence",
     description:
-      "Why makeup cakes, with the maths visible. Transparent score weights and claim literacy for SPF, treatment and hybrid makeup.",
+      "Pancake makeup defined, then the maths. Transparent score weights and claim literacy for SPF, treatment and hybrid makeup.",
     image: "/og/insights.png",
     imageAlt: "Why makeup cakes — the maths visible. Vanity or Vice.",
   },
 };
 
-export function shareHead(path: keyof typeof SHARE | string) {
-  const page = SHARE[path] ?? SHARE["/"]!;
+export function shareHead(
+  path: string,
+  override?: Partial<Pick<SharePage, "title" | "description" | "image" | "imageAlt">>,
+) {
+  const base = SHARE[path] ?? SHARE["/"]!;
+  const page = { ...base, ...override };
   const url = `${SITE_ORIGIN}${page.path === "/" ? "/" : page.path}`;
-  const image = `${SITE_ORIGIN}${page.image}`;
+  const image = page.image.startsWith("http") ? page.image : `${SITE_ORIGIN}${page.image}`;
   return {
     meta: [
       { title: page.title },

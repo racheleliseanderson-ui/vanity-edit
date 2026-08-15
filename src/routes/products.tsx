@@ -8,6 +8,7 @@ import { Chip, Meter } from "@/components/mi/viz";
 import { BRANDS, FILTERS, TYPE_MAP, TYPES } from "@/lib/mi/catalog";
 import { useI18n } from "@/lib/mi/i18n";
 import { pageUrl } from "@/lib/mi/share";
+import { shareHead } from "@/lib/mi/seo";
 import {
   PRICE_BANDS,
   PRICE_EXTENT,
@@ -61,20 +62,7 @@ export const Route = createFileRoute("/products")({
     if (s["thin"] === true || s["thin"] === "true") out.thin = true;
     return out;
   },
-  head: () => ({
-    meta: [
-      { title: "Product Search · Makeup Intelligence" },
-      {
-        name: "description",
-        content:
-          "Search the desk by name, house, lane, type, price range and preference filters — every finished formula tied to the product type it belongs to.",
-      },
-      { property: "og:title", content: "Product Search · Makeup Intelligence" },
-      { property: "og:description", content: "Search finished formulas by lane, film cost, price and preference." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => shareHead("/products"),
   component: ProductsRoute,
 });
 
