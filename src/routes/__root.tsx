@@ -14,7 +14,18 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../lib/mi/theme";
 import { A11yProvider } from "../lib/mi/a11y";
 import { I18nProvider } from "../lib/mi/i18n";
-import { PUBLICATION } from "../lib/mi/seo";
+import { PUBLICATION, SHARE } from "../lib/mi/seo";
+
+// Share card: Vanity or Vice WordPress photography. Remapped in place so shareHead()
+// emits exactly one og:image / twitter:image per page.
+const SHARE_IMAGE =
+  "https://i0.wp.com/vanityvice.blog/wp-content/uploads/2026/08/AdobeStock_1243771074.jpeg?resize=1200%2C630&ssl=1";
+const SHARE_IMAGE_ALT =
+  "Palette of powder and cream cosmetics in jewel tones, blush, bronze and berry pans arranged on black";
+for (const page of Object.values(SHARE)) {
+  page.image = SHARE_IMAGE;
+  page.imageAlt = SHARE_IMAGE_ALT;
+}
 
 function NotFoundComponent() {
   return (
