@@ -121,10 +121,10 @@ function Index() {
               </p>
               <div className="space-y-5">
                 {[
-                  ["Skin tint · tinted SPF", "Sheer · one film", 14],
-                  ["Placed concealer", "Spot · intelligent", 30],
-                  ["Buildable mineral powder", "Conditional", 56],
-                  ["Full-face full coverage", "High pancake risk", 88],
+                  ["Skin tint · tinted SPF", "▲ Qualified · sheer, one film", 14],
+                  ["Placed concealer", "▲ Qualified · spot, intelligent", 30],
+                  ["Buildable mineral powder", "◆ Conditional · watch the layers", 56],
+                  ["Full-face full coverage", "● Obstructed · high pancake risk", 88],
                 ].map(([label, verdict, pos]) => (
                   <div key={label as string} className="grid gap-3 border-b border-border pb-5 md:grid-cols-[1fr_auto]">
                     <div>

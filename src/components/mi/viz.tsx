@@ -40,8 +40,9 @@ export function RiskDial({ arch, compact = false }: { arch: Architecture; compac
         <p className="display text-5xl leading-none" style={{ color: tone }}>
           <DeltaNumber value={arch.risk} />
         </p>
-        <p className="display mt-1 text-2xl" style={{ color: tone }}>
-          {arch.headline}
+        <p className="display mt-1 flex items-center gap-2 text-2xl" style={{ color: tone }}>
+          <span aria-hidden>{riskMark(arch.risk).glyph}</span>
+          <span>{riskMark(arch.risk).word} · {arch.headline}</span>
         </p>
         <p className="mt-2 text-[0.62rem] tracking-[0.2em] uppercase text-muted-foreground">
           Finish · skin-like <span className="text-foreground tabular-nums">{arch.skinlike}</span>
