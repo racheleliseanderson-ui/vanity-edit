@@ -7,6 +7,14 @@ export function riskTone(risk: number) {
   return risk < 25 ? "var(--tone-good)" : risk < 45 ? "var(--tone-fair)" : risk < 65 ? "var(--tone-warn)" : "var(--tone-bad)";
 }
 
+/** Status is never hue alone: every mark carries a shape and a word. */
+export function riskMark(risk: number): { glyph: string; word: string } {
+  if (risk < 25) return { glyph: "▲", word: "Qualified" };
+  if (risk < 65) return { glyph: "◆", word: "Conditional" };
+  return { glyph: "●", word: "Obstructed" };
+}
+
+
 export function RiskDial({ arch, compact = false }: { arch: Architecture; compact?: boolean }) {
   const r = 54;
   const circ = Math.PI * r; // semicircle
