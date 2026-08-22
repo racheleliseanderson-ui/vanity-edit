@@ -15,9 +15,11 @@ export const FLEET: { label: string; links: { name: string; href: string }[] }[]
     label: "Salty & Clever",
     links: [
       { name: "Salty & Clever", href: "https://saltnotes.blog" },
-      { name: "Restaurant Intelligence", href: "https://deepdish.saltnotes.blog" },
-      { name: "Occasion OS", href: "https://occasion.saltnotes.blog" },
+      { name: "Salty Desk", href: "https://salty.saltnotes.blog" },
       { name: "Kitchen & Bar", href: "https://kitchen.saltnotes.blog" },
+      { name: "Menu Builder", href: "https://occasion.saltnotes.blog/architecture" },
+      { name: "Occasion OS", href: "https://occasion.saltnotes.blog" },
+      { name: "Restaurant Intelligence", href: "https://deepdish.saltnotes.blog" },
     ],
   },
   {
@@ -54,7 +56,7 @@ export function HouseWordmark({ className = "" }: { className?: string }) {
 function Col({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <p className="house-gold text-[0.58rem] tracking-[0.28em] uppercase">{label}</p>
+      <p className="text-[0.58rem] tracking-[0.28em] uppercase text-muted-foreground">{label}</p>
       <div className="mt-4 space-y-2 text-[0.78rem] leading-relaxed text-muted-foreground">{children}</div>
     </div>
   );
