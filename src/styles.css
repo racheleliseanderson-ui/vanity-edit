@@ -83,8 +83,8 @@
   --secondary-foreground: oklch(0.93 0.012 76);
   --muted: oklch(0.225 0.014 24);
   --muted-foreground: oklch(0.735 0.018 66);
-  --champagne: oklch(0.83 0.085 82);
-  --accent: oklch(0.83 0.085 82);
+  --champagne: oklch(0.72 0.145 20);
+  --accent: oklch(0.72 0.145 20);
   --accent-foreground: oklch(0.18 0.02 30);
   --blush: oklch(0.8 0.06 18);
   --porcelain: oklch(0.962 0.012 74);
@@ -95,7 +95,7 @@
   --hairline: oklch(0.98 0.01 80 / 14%);
   --border: oklch(0.98 0.01 80 / 14%);
   --input: oklch(0.98 0.01 80 / 20%);
-  --ring: oklch(0.83 0.085 82 / 60%);
+  --ring: oklch(0.72 0.145 20 / 60%);
   --chart-1: oklch(0.83 0.085 82);
   --chart-2: oklch(0.62 0.12 16);
   --chart-3: oklch(0.8 0.06 18);
@@ -108,7 +108,7 @@
   --sidebar-accent: oklch(0.235 0.016 24);
   --sidebar-accent-foreground: oklch(0.93 0.012 76);
   --sidebar-border: oklch(0.98 0.01 80 / 14%);
-  --sidebar-ring: oklch(0.83 0.085 82 / 60%);
+  --sidebar-ring: oklch(0.72 0.145 20 / 60%);
 
   --gradient-spectrum: linear-gradient(
     90deg,
@@ -125,9 +125,9 @@
   );
   --gradient-champagne: linear-gradient(
     100deg,
-    oklch(0.9 0.06 88),
-    oklch(0.78 0.1 74) 55%,
-    oklch(0.62 0.11 42)
+    oklch(0.82 0.11 26),
+    oklch(0.72 0.15 20) 55%,
+    oklch(0.55 0.16 14)
   );
   --shadow-lux: 0 30px 90px -40px oklch(0 0 0 / 75%);
   --shadow-glow: 0 0 0 1px oklch(0.83 0.085 82 / 26%), 0 20px 60px -30px oklch(0.42 0.13 12 / 70%);
@@ -164,8 +164,8 @@
   --secondary-foreground: oklch(0.26 0.035 26);
   --muted: oklch(0.925 0.014 68);
   --muted-foreground: oklch(0.44 0.028 34);
-  --champagne: oklch(0.56 0.1 74);
-  --accent: oklch(0.56 0.1 74);
+  --champagne: oklch(0.47 0.16 20);
+  --accent: oklch(0.47 0.16 20);
   --accent-foreground: oklch(0.985 0.008 80);
   --blush: oklch(0.86 0.055 20);
   --porcelain: oklch(0.99 0.006 80);
@@ -176,7 +176,7 @@
   --hairline: oklch(0.28 0.04 24 / 16%);
   --border: oklch(0.28 0.04 24 / 16%);
   --input: oklch(0.28 0.04 24 / 24%);
-  --ring: oklch(0.56 0.1 74 / 50%);
+  --ring: oklch(0.47 0.16 20 / 50%);
   --chart-1: oklch(0.56 0.1 74);
   --chart-2: oklch(0.48 0.15 18);
   --chart-3: oklch(0.72 0.09 18);
@@ -189,7 +189,7 @@
   --sidebar-accent: oklch(0.915 0.016 66);
   --sidebar-accent-foreground: oklch(0.26 0.035 26);
   --sidebar-border: oklch(0.28 0.04 24 / 16%);
-  --sidebar-ring: oklch(0.56 0.1 74 / 50%);
+  --sidebar-ring: oklch(0.47 0.16 20 / 50%);
 
   --gradient-spectrum: linear-gradient(
     90deg,
@@ -206,9 +206,9 @@
   );
   --gradient-champagne: linear-gradient(
     100deg,
-    oklch(0.62 0.1 82),
-    oklch(0.5 0.13 46) 55%,
-    oklch(0.4 0.14 14)
+    oklch(0.55 0.15 24),
+    oklch(0.47 0.16 20) 55%,
+    oklch(0.38 0.15 14)
   );
   --shadow-lux: 0 30px 80px -44px oklch(0.3 0.06 24 / 30%);
   --shadow-glow: 0 0 0 1px oklch(0.4 0.14 14 / 14%), 0 20px 50px -32px oklch(0.4 0.14 14 / 28%);
@@ -345,7 +345,7 @@
 
 @utility field-gilt {
   background:
-    radial-gradient(90% 80% at 88% 8%, oklch(0.83 0.085 82 / 22%) 0%, transparent 60%),
+    radial-gradient(90% 80% at 88% 8%, oklch(0.72 0.145 20 / 20%) 0%, transparent 60%),
     linear-gradient(190deg, var(--card), var(--background) 70%);
 }
 
@@ -462,8 +462,8 @@
   --secondary-foreground: oklch(1 0 0);
   --muted: oklch(0.2 0 0);
   --muted-foreground: oklch(0.86 0.01 80);
-  --champagne: oklch(0.93 0.11 92);
-  --accent: oklch(0.93 0.11 92);
+  --champagne: oklch(0.85 0.15 22);
+  --accent: oklch(0.85 0.15 22);
   --accent-foreground: oklch(0 0 0);
   --blush: oklch(0.9 0.06 18);
   --porcelain: oklch(1 0 0);
@@ -474,13 +474,13 @@
   --hairline: oklch(1 0 0 / 46%);
   --border: oklch(1 0 0 / 46%);
   --input: oklch(1 0 0 / 62%);
-  --ring: oklch(0.93 0.11 92);
+  --ring: oklch(0.85 0.15 22);
 
   --gradient-spectrum: linear-gradient(90deg, oklch(0.86 0.16 158) 0%, oklch(0.93 0.11 92) 45%, oklch(0.8 0.17 48) 74%, oklch(0.72 0.2 24) 100%);
   --gradient-veil: linear-gradient(180deg, oklch(0 0 0 / 0%) 0%, oklch(0 0 0 / 82%) 55%, oklch(0 0 0) 100%);
-  --gradient-champagne: linear-gradient(100deg, oklch(1 0.04 96), oklch(0.93 0.11 92) 55%, oklch(0.82 0.13 74));
+  --gradient-champagne: linear-gradient(100deg, oklch(0.94 0.09 26), oklch(0.85 0.15 22) 55%, oklch(0.76 0.17 18));
   --shadow-lux: 0 0 0 1px oklch(1 0 0 / 30%);
-  --shadow-glow: 0 0 0 2px oklch(0.93 0.11 92 / 60%);
+  --shadow-glow: 0 0 0 2px oklch(0.85 0.15 22 / 60%);
 
   --tone-good: oklch(0.86 0.16 158);
   --tone-fair: oklch(0.93 0.11 92);
@@ -512,8 +512,8 @@
   --secondary-foreground: oklch(0.1 0 0);
   --muted: oklch(0.94 0 0);
   --muted-foreground: oklch(0.34 0.01 60);
-  --champagne: oklch(0.42 0.11 68);
-  --accent: oklch(0.42 0.11 68);
+  --champagne: oklch(0.38 0.18 20);
+  --accent: oklch(0.38 0.18 20);
   --accent-foreground: oklch(1 0 0);
   --blush: oklch(0.74 0.09 18);
   --porcelain: oklch(1 0 0);
@@ -524,13 +524,13 @@
   --hairline: oklch(0.1 0 0 / 42%);
   --border: oklch(0.1 0 0 / 42%);
   --input: oklch(0.1 0 0 / 60%);
-  --ring: oklch(0.42 0.11 68);
+  --ring: oklch(0.38 0.18 20);
 
   --gradient-spectrum: linear-gradient(90deg, oklch(0.42 0.13 158) 0%, oklch(0.48 0.11 84) 45%, oklch(0.5 0.17 46) 74%, oklch(0.42 0.2 24) 100%);
   --gradient-veil: linear-gradient(180deg, oklch(1 0 0 / 0%) 0%, oklch(1 0 0 / 84%) 55%, oklch(1 0 0) 100%);
-  --gradient-champagne: linear-gradient(100deg, oklch(0.48 0.11 78), oklch(0.4 0.13 52) 55%, oklch(0.3 0.14 20));
+  --gradient-champagne: linear-gradient(100deg, oklch(0.46 0.17 24), oklch(0.38 0.18 20) 55%, oklch(0.3 0.16 14));
   --shadow-lux: 0 0 0 1px oklch(0.1 0 0 / 28%);
-  --shadow-glow: 0 0 0 2px oklch(0.42 0.11 68 / 55%);
+  --shadow-glow: 0 0 0 2px oklch(0.38 0.18 20 / 55%);
 
   --tone-good: oklch(0.42 0.13 158);
   --tone-fair: oklch(0.46 0.11 80);
@@ -611,4 +611,37 @@
   min-width: 2.75rem;
   touch-action: manipulation;
   user-select: none;
+}
+
+/* ── Northern Lantern House layer. Gold is reserved: Labs wordmark + footer hairline only. ── */
+:root {
+  --house-gold: #c8a34a;
+  --house-navy: #101828;
+  --house-deep: #0b1220;
+  --house-pearl: #f4f1ea;
+  --house-paper: #fbfaf7;
+}
+
+.light {
+  --house-deep: var(--house-pearl);
+}
+
+.hc-black {
+  --house-deep: #000000;
+}
+
+.hc-white {
+  --house-deep: #ffffff;
+}
+
+.house-gold {
+  color: var(--house-gold);
+}
+
+.hc-white .house-gold {
+  color: #6f5417;
+}
+
+.house-footer {
+  border-top: 1px solid var(--house-gold);
 }
