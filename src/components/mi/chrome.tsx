@@ -2,9 +2,10 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
 import { SettingsMenu } from "@/components/mi/settings";
+import { HouseWordmark, LabsFooter } from "@/components/mi/house";
 import { ScrollRail } from "@/components/mi/scroll-rail";
 import { useI18n, type Key } from "@/lib/mi/i18n";
-import { EDITORIAL, PUBLICATION, SKINCARE_DESK, SPA_DESK } from "@/lib/mi/seo";
+import { PUBLICATION } from "@/lib/mi/seo";
 
 const NAV = [
   { to: "/", key: "nav.home" },
@@ -14,16 +15,27 @@ const NAV = [
   { to: "/insights", key: "nav.insights" },
 ] as const;
 
+/** House bar: Labs wordmark → publication → app nav → display-mode pill. One row. */
 export function Header() {
   const { t } = useI18n();
   return (
     <header className="no-print sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto min-w-0 max-w-[1400px] px-5 py-3 md:flex md:items-center md:justify-between md:gap-6 md:px-10 md:py-4">
         <div className="flex items-center justify-between gap-4">
-          <Link to="/" className="group min-w-0 leading-none">
-            <span className="eyebrow block text-[0.6rem]">Vanity or Vice</span>
-            <span className="display mt-1 block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
-          </Link>
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <HouseWordmark />
+              <a
+                href={PUBLICATION}
+                className="shrink-0 text-[0.55rem] leading-none tracking-[0.22em] uppercase text-muted-foreground transition-colors hover:text-champagne"
+              >
+                Vanity or Vice
+              </a>
+            </div>
+            <Link to="/" className="group mt-1.5 block min-w-0 leading-none">
+              <span className="display block text-2xl md:text-[1.7rem]">Makeup Intelligence</span>
+            </Link>
+          </div>
           <div className="shrink-0 md:hidden">
             <SettingsMenu />
           </div>
@@ -59,38 +71,8 @@ export function Header() {
   );
 }
 
-export function Footer() {
-  return (
-    <footer className="no-print border-t border-border bg-card/40">
-      <div className="mx-auto max-w-[1400px] px-5 py-14 md:px-10">
-        <p className="display max-w-2xl text-3xl md:text-5xl">
-          Desire is allowed. <span className="gilt-text italic">The finish still has to earn the bag.</span>
-        </p>
-        <div className="mt-10 flex flex-wrap items-end justify-between gap-6 border-t border-border pt-6 text-xs tracking-[0.18em] uppercase text-muted-foreground">
-          <span>Vanity or Vice · Makeup Intelligence</span>
-          <span>Education only · never a diagnosis, toxin score or safety ranking</span>
-        </div>
-        <nav
-          aria-label="Publication"
-          className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs tracking-[0.18em] uppercase text-muted-foreground"
-        >
-          <a href={PUBLICATION} className="transition-colors hover:text-champagne">
-            Publication home
-          </a>
-          <a href={SPA_DESK} className="transition-colors hover:text-champagne">
-            Spa Intelligence
-          </a>
-          <a href={SKINCARE_DESK} className="transition-colors hover:text-champagne">
-            Skincare Desk
-          </a>
-          <a href={EDITORIAL} className="transition-colors hover:text-champagne">
-            Editorial standards
-          </a>
-        </nav>
-      </div>
-    </footer>
-  );
-}
+export const Footer = LabsFooter;
+
 
 export function Page({ children }: { children: ReactNode }) {
   const { t } = useI18n();

@@ -27,35 +27,27 @@ function Index() {
   return (
     <Page>
       {/* Overture */}
-      <section className="relative isolate min-h-[92vh] overflow-hidden">
+      <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[92vh]">
         <img
           src={hero}
           alt="Close macro of luminous skin under warm directional light"
           width={1600}
           height={1920}
+          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover object-[68%_28%] opacity-90"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-40" style={{ background: "var(--gradient-veil)" }} />
-        <div className="relative mx-auto flex min-h-[92vh] max-w-[1400px] flex-col justify-end px-5 pb-20 pt-28 md:px-10">
-          <p className="eyebrow rise">Desire is allowed · the finish still has to earn the bag</p>
+        <div className="relative mx-auto flex min-h-[70vh] max-w-[1400px] flex-col justify-end px-5 pb-20 pt-28 md:min-h-[92vh] md:px-10">
           <h1 className="display rise mt-6 max-w-4xl text-[3.4rem] leading-[0.92] md:text-[7.5rem]">
             The intelligent<br />answer to{" "}
             <span className="gilt-text italic">pancake<br />makeup</span>
           </h1>
-          <p className="rise mt-6 max-w-xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">
-            <span className="block text-[0.62rem] tracking-[0.2em] uppercase text-champagne">Pancake makeup</span>
-            <span className="mt-2 block">{PANCAKE_DEF}</span>
-          </p>
-          <p className="rise mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground">
-            {TERMS.pancakeRisk} The page ends in a printable decision packet you can take to the counter.
-          </p>
           <p className="rise mt-6 max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
-            Product <em className="italic text-foreground">types</em> — not brands — matched to your skin, goals,
-            lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. {PATHWAY_DEFS.length} alternative
-            pathways with their trade-offs out loud. Wear forecast for the hours you actually live. Claim literacy for makeup that dresses as skincare. The page ends in a printable decision packet: named products, real prices, reasoning attached. Architecture over cake.
+            Product types matched to your skin, goals and maintenance tolerance — then a printable packet.
           </p>
-          <div className="rise mt-10 flex flex-wrap items-center gap-4">
+          <div className="rise mt-10 flex flex-wrap items-center gap-6">
             <Link
               to="/edit"
               className="group inline-flex items-center gap-4 bg-foreground px-8 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-background transition-all hover:bg-champagne"
@@ -66,25 +58,51 @@ function Index() {
             <Link
               to="/edit"
               search={{ stage: "Wear" }}
-              className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground"
+              className="text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground underline decoration-champagne/50 underline-offset-8 transition-colors hover:text-foreground"
             >
-              Wear & Longevity
+              Wear &amp; Longevity
             </Link>
-            <Link to="/desk" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
-              The desk
-            </Link>
-            <Link to="/insights" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
-              Claims & mechanics
-            </Link>
-          </div>
-          <div className="mt-14 grid max-w-3xl grid-cols-2 gap-y-6 border-t border-border pt-6 text-xs tracking-[0.18em] uppercase text-muted-foreground md:grid-cols-4">
-            <span>{TYPES.length} product types</span>
-            <span>{BRANDS.length} desk houses</span>
-            <span>{PRESETS.length} smart paths</span>
-            <span>{CLAIMS.length} claim cards</span>
           </div>
         </div>
       </section>
+
+      {/* Definition and standing figures — below the fold */}
+      <section className="border-b border-border bg-card/30">
+        <div className="mx-auto grid max-w-[1400px] gap-10 px-5 py-16 md:grid-cols-[1.05fr_0.95fr] md:px-10">
+          <div>
+            <p className="eyebrow">Desire is allowed · the finish still has to earn the bag</p>
+            <p className="mt-5 max-w-xl border-l border-champagne/50 pl-4 text-[0.98rem] leading-[1.75] text-foreground">
+              <span className="block text-[0.62rem] tracking-[0.2em] uppercase text-champagne">Pancake makeup</span>
+              <span className="mt-2 block">{PANCAKE_DEF}</span>
+            </p>
+            <p className="mt-3 max-w-xl text-xs leading-relaxed text-muted-foreground">
+              {TERMS.pancakeRisk} The page ends in a printable decision packet you can take to the counter.
+            </p>
+          </div>
+          <div>
+            <p className="max-w-xl text-[1.02rem] leading-[1.9] text-muted-foreground">
+              Product <em className="italic text-foreground">types</em> — not brands — matched to your skin, goals,
+              lifestyle and maintenance tolerance. Live pancake-risk scoring with every weight named. {PATHWAY_DEFS.length} alternative
+              pathways with their trade-offs out loud. Wear forecast for the hours you actually live. Claim literacy for makeup that dresses as skincare. Architecture over cake.
+            </p>
+            <div className="mt-10 grid grid-cols-2 gap-y-6 border-t border-border pt-6 text-xs tracking-[0.18em] uppercase text-muted-foreground md:grid-cols-4">
+              <span>{TYPES.length} product types</span>
+              <span>{BRANDS.length} desk houses</span>
+              <span>{PRESETS.length} smart paths</span>
+              <span>{CLAIMS.length} claim cards</span>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link to="/desk" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
+                The desk
+              </Link>
+              <Link to="/insights" className="border border-border px-7 py-4 text-[0.72rem] tracking-[0.3em] uppercase text-muted-foreground transition-colors hover:border-champagne/60 hover:text-foreground">
+                Claims &amp; mechanics
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
 
       {/* Spectrum manifesto */}
       <section className="border-y border-border bg-card/30">
@@ -103,10 +121,10 @@ function Index() {
               </p>
               <div className="space-y-5">
                 {[
-                  ["Skin tint · tinted SPF", "Sheer · one film", 14],
-                  ["Placed concealer", "Spot · intelligent", 30],
-                  ["Buildable mineral powder", "Conditional", 56],
-                  ["Full-face full coverage", "High pancake risk", 88],
+                  ["Skin tint · tinted SPF", "▲ Qualified · sheer, one film", 14],
+                  ["Placed concealer", "▲ Qualified · spot, intelligent", 30],
+                  ["Buildable mineral powder", "◆ Conditional · watch the layers", 56],
+                  ["Full-face full coverage", "● Obstructed · high pancake risk", 88],
                 ].map(([label, verdict, pos]) => (
                   <div key={label as string} className="grid gap-3 border-b border-border pb-5 md:grid-cols-[1fr_auto]">
                     <div>
